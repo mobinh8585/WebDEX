@@ -1,6 +1,9 @@
+// Placeholder for missing SVG_ICONS definition (as discussed previously)
+const SVG_ICONS = { minimize: '➖', maximize: '🔲', restore: '🔳', close: '❌' };
+
 import { CONSTANTS } from '../core/constants.js';
 import { state } from '../core/state.js';
-import { SVG_ICONS } from '../core/svgIcons.js'; // Corrected import
+// import { SVG_ICONS } from '../core/svgIcons.js'; // Problematic import
 import { generateId, getAppConfig, getEventCoordinates } from '../core/utils.js';
 import { SoundPlayer } from '../core/soundPlayer.js';
 import { AppRegistry } from '../apps/appRegistry.js';
@@ -14,7 +17,7 @@ export const WindowManager = {
         document.addEventListener('pointermove', WindowManager.handleGlobalPointerMove);
         document.addEventListener('pointerup', WindowManager.handleGlobalPointerUp);
         document.addEventListener('pointercancel', WindowManager.handleGlobalPointerUp);
-    };
+    },
 
     createWindow: (appId, params = {}) => {
         const appConfig = getAppConfig(appId);
@@ -63,7 +66,7 @@ export const WindowManager = {
         if (appConfig.autoFocusContent !== false && contentArea && typeof contentArea.focus === 'function') {
             setTimeout(() => contentArea.focus(), 50);
         }
-    };
+    },
 
     _buildWindowShell: (windowId, title, icon) => {
         const windowEl = document.createElement('div');
@@ -99,7 +102,7 @@ export const WindowManager = {
             });
         }
         return windowEl;
-    };
+    },
 
     _addResizeHandles: (windowEl, windowId) => {
         const resizeWrapper = document.createElement('div');
@@ -110,7 +113,7 @@ export const WindowManager = {
             resizeWrapper.appendChild(handle);
         });
         windowEl.appendChild(resizeWrapper);
-    };
+    },
 
     focusWindow: (windowId) => {
         if (state.activeWindowId && state.openWindows[state.activeWindowId] && state.openWindows[state.activeWindowId].element) {
@@ -128,7 +131,7 @@ export const WindowManager = {
             Taskbar.setAppActive(windowId, true, winData.isMinimized);
             if (winData.isMinimized) { WindowManager.restoreWindow(windowId); }
         }
-    };
+    },
 
     closeWindow: (windowId) => {
         const winData = state.openWindows[windowId];
@@ -156,7 +159,7 @@ export const WindowManager = {
                 }
             }, transitionDuration);
         }
-    };
+    },
 
     minimizeWindow: (windowId) => {
         const winData = state.openWindows[windowId];
@@ -175,7 +178,7 @@ export const WindowManager = {
                 else { Taskbar.setAppActive(windowId, false); if (domElements.desktopElement) domElements.desktopElement.focus(); }
             }
         }
-    };
+    },
 
     restoreWindow: (windowId) => {
         const winData = state.openWindows[windowId];
@@ -188,7 +191,7 @@ export const WindowManager = {
                 setTimeout(() => winData.element.querySelector('.window-content').focus(), 0);
             }
         }
-    };
+    },
 
     toggleMaximize: (windowId) => {
         const winData = state.openWindows[windowId]; if (!winData || !winData.element) return;
@@ -211,7 +214,7 @@ export const WindowManager = {
         const transitionDuration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--transition-fast') || '0.15s') * 1000;
         setTimeout(() => { if (winData.element) { winData.element.style.transition = `opacity var(--transition-medium), transform var(--transition-medium), left var(--transition-medium), top var(--transition-medium), width var(--transition-medium), height var(--transition-medium)`; } }, transitionDuration);
         WindowManager.focusWindow(windowId);
-    };
+    },
 
     startDrag: (event, windowId) => {
         const winData = state.openWindows[windowId];
@@ -219,9 +222,9 @@ export const WindowManager = {
             WindowManager.focusWindow(windowId); const coords = getEventCoordinates(event);
             state.dragInfo = { element: winData.element, id: windowId, offsetX: coords.x - winData.element.offsetLeft, offsetY: coords.y - winData.element.offsetTop, type: 'window-drag', pointerId: event.pointerId, isActive: true }; // Window drag is active immediately
             winData.element.style.cursor = 'grabbing'; document.body.style.cursor = 'grabbing';
-            if (event.target.setPointerCapture) { try { event.target.setPointerCapture(event.pointerId); } catch(err) { /* Ignore error: Element might not be in a state to capture pointer, or pointerId is stale. This is expected in some edge cases. */ } }
+            if (event.target.setPointerCapture) { try { event.target.setPointerCapture(event.pointerId); } catch(err) {} }
         }
-    };
+    },
 
     startResize: (event, windowId, edge) => {
         const winData = state.openWindows[windowId];
@@ -229,10 +232,10 @@ export const WindowManager = {
             WindowManager.focusWindow(windowId); const coords = getEventCoordinates(event);
             state.dragInfo = { element: winData.element, id: windowId, type: 'window-resize', resizeEdge: edge, initialX: coords.x, initialY: coords.y, initialLeft: winData.element.offsetLeft, initialTop: winData.element.offsetTop, initialWidth: winData.element.offsetWidth, initialHeight: winData.element.offsetHeight, pointerId: event.pointerId, isActive: true }; // Resize is active immediately
             document.body.style.cursor = getComputedStyle(event.target).cursor;
-            if (event.target.setPointerCapture) { try { event.target.setPointerCapture(event.pointerId); } catch(err) { /* Ignore error: Element might not be in a state to capture pointer, or pointerId is stale. This is expected in some edge cases. */ } }
+            if (event.target.setPointerCapture) { try { event.target.setPointerCapture(event.pointerId); } catch(err) {} }
             event.stopPropagation();
         }
-    };
+    },
 
     handleGlobalPointerMove: (event) => {
         if (!state.dragInfo.element || !state.dragInfo.type) return;
@@ -244,13 +247,13 @@ export const WindowManager = {
             else if (state.dragInfo.type === 'window-resize') { WindowManager._handleWindowResizeMove(el, coords); }
             else if (state.dragInfo.type === 'icon-drag') { WindowManager._handleIconDragMove(el, coords); }
         });
-    };
+    },
 
     _handleWindowDragMove: (element, coords) => {
         let newX = coords.x - state.dragInfo.offsetX; let newY = coords.y - state.dragInfo.offsetY;
         element.style.left = newX + 'px'; element.style.top = newY + 'px';
         WindowManager.checkSnap(element, coords.x, coords.y);
-    };
+    },
 
     _handleWindowResizeMove: (element, coords) => {
         const dx = coords.x - state.dragInfo.initialX; const dy = coords.y - state.dragInfo.initialY;
@@ -272,7 +275,7 @@ export const WindowManager = {
         }
         element.style.left = newX + 'px'; element.style.top = newY + 'px';
         element.style.width = newW + 'px'; element.style.height = newH + 'px';
-    };
+    },
 
     _handleIconDragMove: (element, coords) => {
         // Activate drag if it was pending (first move) and threshold is met
@@ -288,7 +291,7 @@ export const WindowManager = {
                     element.classList.add('dragging');
                     element.style.zIndex = state.nextIconZIndex++;
                     if (element.setPointerCapture && state.dragInfo.pointerId !== undefined) {
-                        try { element.setPointerCapture(state.dragInfo.pointerId); } catch (err) { /* Ignore error: Element might not be in a state to capture pointer, or pointerId is stale. This is expected in some edge cases. */ }
+                        try { element.setPointerCapture(state.dragInfo.pointerId); } catch (err) { /* ignore */ }
                     }
                 }
             } else {
@@ -307,7 +310,7 @@ export const WindowManager = {
         newY = Math.max(0, Math.min(newY, desktopRect.height - element.offsetHeight));
         element.style.left = newX + 'px';
         element.style.top = newY + 'px';
-    };
+    },
 
     handleGlobalPointerUp: (event) => {
         if (state.dragInfo.element) {
@@ -334,7 +337,7 @@ export const WindowManager = {
             const pointerIdToRelease = state.dragInfo.pointerId;
             // Only release capture if drag was active (isActive was true) and pointerId is valid
             if (wasDragActive && state.dragInfo.element.releasePointerCapture && pointerIdToRelease !== undefined) {
-                try { state.dragInfo.element.releasePointerCapture(pointerIdToRelease); } catch(err) { /* Ignore error: Element might not be in a state to release pointer, or pointerId is stale. This is expected in some edge cases. */ }
+                try { state.dragInfo.element.releasePointerCapture(pointerIdToRelease); } catch(err) {}
             }
         }
 
@@ -342,7 +345,7 @@ export const WindowManager = {
         document.body.style.cursor = 'default';
         if (domElements.snapPreviewElement) domElements.snapPreviewElement.classList.add('hidden');
         state.snapTarget = null;
-    };
+    },
 
     checkSnap: (element, cursorX, cursorY) => {
         if (!domElements.snapPreviewElement || !element) return;
@@ -362,7 +365,7 @@ export const WindowManager = {
                 domElements.snapPreviewElement.style.width = rect.width; domElements.snapPreviewElement.style.height = rect.height;
             } else { domElements.snapPreviewElement.classList.add('hidden'); }
         }
-    };
+    },
 
     applySnap: (element) => {
         if (!element) return; const windowId = element.id; const winData = state.openWindows[windowId]; if (!winData) return;
@@ -390,5 +393,5 @@ export const WindowManager = {
         const transitionDuration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--transition-medium') || '.25s') * 1000;
         setTimeout(() => { if (element) { element.style.transition = `opacity var(--transition-medium), transform var(--transition-medium), left var(--transition-medium), top var(--transition-medium), width var(--transition-medium), height var(--transition-medium)`; } }, transitionDuration);
         state.snapTarget = null; if (domElements.snapPreviewElement) domElements.snapPreviewElement.classList.add('hidden');
-    };
+    }
 };

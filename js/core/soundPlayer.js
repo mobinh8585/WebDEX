@@ -8,7 +8,7 @@ export const SoundPlayer = {
         } catch (e) {
             console.warn("Web Audio API not supported.");
         }
-    };
+    },
     /** Plays a predefined sound effect. */
     playSound: (type) => {
         if (!state.audioContext) return;
@@ -42,5 +42,5 @@ export const SoundPlayer = {
         } catch (e) {
             console.warn("SoundPlayer error:", e);
         }
-    };
+    }
 };
