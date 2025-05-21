@@ -1,4 +1,4 @@
-import { START_MENU_APPS_CONFIG } from '../core/uiConfigs.js';
+import { START_MENU_APPS_CONFIG } from '../core/svgIcons.js';
 import { SoundPlayer } from '../core/soundPlayer.js';
 import { AppRegistry } from '../apps/appRegistry.js';
 import { domElements } from '../main.js'; // Shared DOM elements
@@ -14,7 +14,7 @@ export const StartMenu = {
         domElements.startMenuElement.addEventListener('click', e => e.stopPropagation()); // Prevent clicks inside from closing
         domElements.startMenuSearchInput.addEventListener('keyup', StartMenu.filterApps);
         domElements.startMenuSearchInput.addEventListener('click', e => e.stopPropagation()); // Prevent search click from closing
-    },
+    };
 
     populate: () => {
         if (!domElements.startMenuAppsList) return;
@@ -45,7 +45,7 @@ export const StartMenu = {
             });
             domElements.startMenuAppsList.appendChild(listItem);
         });
-    },
+    };
 
     filterApps: () => {
         if (!domElements.startMenuSearchInput || !domElements.startMenuAppsList) return;
@@ -58,12 +58,12 @@ export const StartMenu = {
                 appItem.style.display = 'none';
             }
         });
-    },
+    };
 
     toggle: () => {
         if (!domElements.startMenuElement) return;
         domElements.startMenuElement.classList.contains('visible') ? StartMenu.hide() : StartMenu.show();
-    },
+    };
 
     show: () => {
         if (!domElements.startMenuElement || !domElements.startMenuSearchInput) return;
@@ -71,15 +71,15 @@ export const StartMenu = {
         domElements.startMenuSearchInput.value = ''; // Clear search on open
         StartMenu.filterApps(); // Reset filter
         domElements.startMenuSearchInput.focus();
-    },
+    };
 
     hide: () => {
         if (!domElements.startMenuElement || !domElements.startMenuSearchInput) return;
         domElements.startMenuElement.classList.remove('visible');
         domElements.startMenuSearchInput.blur(); // Remove focus
-    },
+    };
 
     isVisible: () => {
         return domElements.startMenuElement && domElements.startMenuElement.classList.contains('visible');
-    }
+    };
 };

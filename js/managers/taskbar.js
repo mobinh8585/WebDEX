@@ -145,7 +145,7 @@ export const Taskbar = {
                 winData.taskbarButton.setAttribute('aria-selected', 'true');
             } else {
                 winData.taskbarButton.classList.remove('active');
-                if(!isMinimized) winData.taskbarButton.removeAttribute('aria-selected'); // only remove if not minimized and not active
+                if (!isMinimized) winData.taskbarButton.removeAttribute('aria-selected'); // only remove if not minimized and not active
             }
         }
     },
