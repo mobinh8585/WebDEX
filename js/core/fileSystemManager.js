@@ -3,9 +3,13 @@ import { getFileExtension } from './utils.js'; // For mimeType in createFile
 
 export const FileSystemManager = {
     _db: null,
-    DB_NAME: 'WebDesktopDB_V5', // Keep version if schema is same, or increment if changed
+    // DB_NAME: Defines the unique name of the IndexedDB database.
+    // Changing this will result in a new, separate database being created.
+    DB_NAME: 'WebDesktopDB_V5', // The 'V5' might be a legacy part of the name; current schema version is DB_VERSION.
     STORE_NAME: 'files',
-    DB_VERSION: 1, // Increment if onupgradeneeded changes object stores/indices
+    // DB_VERSION: Used for schema migrations. Increment this number when
+    // you make changes to object stores or indices in onupgradeneeded.
+    DB_VERSION: 1,
 
     /** Initializes the IndexedDB database. */
     init: async () => {
@@ -50,7 +54,7 @@ export const FileSystemManager = {
                 reject(event.target.error);
             };
         });
-    },
+    };
 
     /** Ensures base directories like '/', '/Desktop' exist. */
     _ensureBaseStructure: async () => {
@@ -66,7 +70,7 @@ export const FileSystemManager = {
             }
         }
         // console.log("FSM: Base structure check complete."); // Dev log
-    },
+    };
 
     /** Gets an object store with the specified mode. */
     _getObjectStore: (mode = 'readonly') => {
@@ -75,7 +79,7 @@ export const FileSystemManager = {
         }
         const transaction = FileSystemManager._db.transaction(FileSystemManager.STORE_NAME, mode);
         return transaction.objectStore(FileSystemManager.STORE_NAME);
-    },
+    };
 
     /** Retrieves an item by its path. */
     getItem: async (path) => {
@@ -88,7 +92,7 @@ export const FileSystemManager = {
                 request.onerror = (e) => { console.error(`FSM: Error getItem '${path}':`, e.target.error); reject(e.target.error); };
             } catch (err) { reject(err); }
         });
-    },
+    };
 
     /** Adds or updates an item in the store. */
     putItem: async (itemData) => {
@@ -101,7 +105,7 @@ export const FileSystemManager = {
                 request.onerror = (e) => { console.error(`FSM: Error putItem '${itemData.path}':`, e.target.error); reject(e.target.error); };
             } catch (err) { reject(err); }
         });
-    },
+    };
 
     /** Deletes an item (and its children if it's a folder). */
     deleteItem: async (path) => {
@@ -121,7 +125,7 @@ export const FileSystemManager = {
                 request.onerror = (e) => { console.error(`FSM: Error deleteItem '${path}':`, e.target.error); reject(e.target.error); };
             } catch (err) { reject(err); }
         });
-    },
+    };
 
     /** Lists all items directly under a given directory path. */
     listDirectory: async (dirPath) => {
@@ -144,7 +148,7 @@ export const FileSystemManager = {
                 };
             } catch (err) { reject(err); }
         });
-    },
+    };
 
     /** Parses a full path into its name, parent path, and full path. */
     _getPathInfo: (fullPath) => {
@@ -161,7 +165,7 @@ export const FileSystemManager = {
             parentPath = parts.join('/') + '/'; // e.g. "/Documents/"
         }
         return { name, parentPath, fullPath: fullPath }; // Return original fullPath for consistency
-    },
+    };
 
     /** Creates a new file. */
     createFile: async (fullPath, content = "") => {
@@ -184,7 +188,7 @@ export const FileSystemManager = {
         await FileSystemManager.putItem(fileData);
         // console.log("FSM: Created file:", fileData); // Dev log
         return fileData;
-    },
+    };
 
     /** Creates a new folder. */
     createFolder: async (fullPath) => {
@@ -210,5 +214,5 @@ export const FileSystemManager = {
         await FileSystemManager.putItem(folderData);
         // console.log("FSM: Created folder:", folderData); // Dev log
         return folderData;
-    },
+    };
 };

@@ -1,7 +1,7 @@
 import { CONSTANTS } from '../core/constants.js';
 import { state } from '../core/state.js';
 import { getEventCoordinates, getIconForFileType } from '../core/utils.js';
-import { DESKTOP_ICONS_CONFIG } from '../core/uiConfigs.js';
+import { DESKTOP_ICONS_CONFIG } from '../core/svgIcons.js';
 import { FileSystemManager } from '../core/fileSystemManager.js';
 import { SoundPlayer } from '../core/soundPlayer.js';
 import { AppRegistry } from '../apps/appRegistry.js';
@@ -46,7 +46,7 @@ export const DesktopManager = {
         domElements.desktopElement.addEventListener('keydown', DesktopManager.handleDesktopKeyDown);
 
         DesktopManager.loadWallpaper();
-    },
+    };
 
     /** Renders desktop icons based on config and file system. */
     renderIcons: async () => {
@@ -134,7 +134,7 @@ export const DesktopManager = {
         });
         DesktopManager.saveIconPositions(); // Save potentially updated auto-layout positions
         // console.log("DM: Icons rendered and positioned."); // Dev Log
-    },
+    };
 
     /** Creates a desktop icon DOM element. */
     _createIconElement: (id, name, iconGlyph, dataAttributes = {}) => {
@@ -160,7 +160,7 @@ export const DesktopManager = {
         });
         iconElement.ondragstart = () => false; // Prevent native browser drag
         return iconElement;
-    },
+    };
 
     /** Handles opening an icon (launch app or file). */
     _handleIconOpen: (iconEl) => {
@@ -186,7 +186,7 @@ export const DesktopManager = {
                 }
             }
         }
-    },
+    };
 
     /** Snaps X, Y coordinates to the desktop grid. */
     snapToGrid: (x, y) => {
@@ -202,7 +202,7 @@ export const DesktopManager = {
             x: Math.max(padding, snappedX), // Ensure it doesn't go outside padding
             y: Math.max(padding, snappedY)
         };
-    },
+    };
 
     /** Handles pointer down on a desktop icon (for click, double-click, drag). */
     handleIconPointerDown: (event, iconElement) => {
@@ -248,7 +248,7 @@ export const DesktopManager = {
             // DO NOT setPointerCapture here
             // DO NOT change z-index here yet
         }
-    },
+    };
 
     /** Handles pointer down on the desktop itself. */
     handleDesktopPointerDown: (event) => {
@@ -262,7 +262,7 @@ export const DesktopManager = {
         if (event.pointerType === 'touch') { // Clear long press if touch starts on desktop
             clearTimeout(state.longPressTimer);
         }
-    },
+    };
 
     /** Handles keyboard navigation for desktop icons. */
     handleDesktopKeyDown: (event) => {
@@ -303,7 +303,7 @@ export const DesktopManager = {
                 }
             }
         }
-    },
+    };
 
     /** Sets a desktop icon as active. */
     setActiveIcon: (iconId) => {
@@ -316,7 +316,7 @@ export const DesktopManager = {
             const icons = Array.from(domElements.desktopElement.querySelectorAll('.desktop-icon'));
             state.focusedDesktopIconIndex = icons.findIndex(icon => icon.id === iconId);
         }
-    },
+    };
 
     /** Clears the currently active desktop icon. */
     clearActiveIcon: () => {
@@ -326,7 +326,7 @@ export const DesktopManager = {
             state.activeDesktopIconId = null;
             // Don't reset focusedDesktopIconIndex here, let focus() manage it
         }
-    },
+    };
 
     /** Saves current icon positions to localStorage. */
     saveIconPositions: () => {
@@ -339,7 +339,7 @@ export const DesktopManager = {
         } catch (e) {
             console.warn("DM: Error saving icon positions to localStorage:", e);
         }
-    },
+    };
 
     /** Sets the desktop background image. */
     setBackground: (url) => {
@@ -353,7 +353,7 @@ export const DesktopManager = {
         } catch (e) {
             console.warn("DM: Error saving wallpaper URL to localStorage:", e);
         }
-    },
+    };
 
     /** Loads wallpaper based on current theme from localStorage. */
     loadWallpaper: () => {
@@ -364,7 +364,7 @@ export const DesktopManager = {
             console.warn("DM: Error loading wallpaper URL from localStorage:", e);
         }
         DesktopManager.setBackground(storedWallpaper); // setBackground handles default if stored is null/empty
-    },
+    };
 
     /** Handles context menu requests on the desktop or icons. */
     handleContextMenu: (event) => {
@@ -377,5 +377,5 @@ export const DesktopManager = {
             ContextMenu.showForDesktop(event);
         }
         if (StartMenu && StartMenu.isVisible()) StartMenu.hide(); // Hide start menu if open
-    },
+    };
 };
