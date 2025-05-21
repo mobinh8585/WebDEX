@@ -64,22 +64,12 @@ export const DesktopManager = {
 
         const iconCellWidth = state.iconGridCellSize.width;
         const iconCellHeight = state.iconGridCellSize.height;
-        const desktopPadding = CONSTANTS.DESKTOP_PADDING; // Use a local var for clarity
-        const desktopClientWidth = domElements.desktopElement.clientWidth;
-        const availableWidth = desktopClientWidth - (desktopPadding * 2);
+        const availableWidth = domElements.desktopElement.clientWidth - (CONSTANTS.DESKTOP_PADDING * 2);
 
-        if (desktopClientWidth < 480) { // Example breakpoint for single column
-            state.iconsPerRow = 1;
-        } else if (desktopClientWidth < 768) { // Example breakpoint for fewer icons per row
-            state.iconsPerRow = Math.max(1, Math.floor(availableWidth / iconCellWidth) -1); // Try one less than calculated for more spacing
-            if (state.iconsPerRow < 2) state.iconsPerRow = 2; // Ensure at least 2 for medium screens if possible
-        }
-        else {
-            state.iconsPerRow = Math.max(1, Math.floor(availableWidth / iconCellWidth));
-        }
-        // console.log(`DM.renderIcons: Desktop clientWidth: ${desktopClientWidth}, Available: ${availableWidth}, Icons per row: ${state.iconsPerRow}, CellW: ${iconCellWidth}`); // Dev Log
+        state.iconsPerRow = Math.max(1, Math.floor(availableWidth / iconCellWidth));
+        // console.log(`DM.renderIcons: Desktop clientWidth: ${domElements.desktopElement.clientWidth}, Available: ${availableWidth}, Icons per row: ${state.iconsPerRow}`); // Dev Log
 
-        let currentX = desktopPadding;
+        let currentX = CONSTANTS.DESKTOP_PADDING;
         let currentY = CONSTANTS.DESKTOP_PADDING;
         let iconCountInRow = 0;
         let iconDomElements = [];
@@ -222,10 +212,10 @@ export const DesktopManager = {
         const currentTime = new Date().getTime();
         // Double tap/click handling
         if (currentTime - state.lastTouchTime < CONSTANTS.DOUBLE_CLICK_TIMEOUT) {
-            if ( (event.pointerType !== 'mouse') || (event.pointerType === 'mouse' && event.button === 0) ) { // Ensure left click for mouse
-                 clearTimeout(state.longPressTimer); // Clear long press on successful double tap
+            if ( (event.pointerType !== 'mouse') || (event.pointerType === 'mouse' && event.button === 0) ) {
                  DesktopManager._handleIconOpen(iconElement);
                  state.lastTouchTime = 0; // Reset for next double click
+                 clearTimeout(state.longPressTimer);
                  return;
             }
         }
@@ -250,32 +240,13 @@ export const DesktopManager = {
                 offsetY: coords.y - iconElement.offsetTop,
                 type: 'icon-drag',
                 pointerId: event.pointerId,
-                initialPointerX: coords.x,
-                initialPointerY: coords.y,
+                initialPointerX: coords.x, // Added for drag threshold
+                initialPointerY: coords.y, // Added for drag threshold
                 isActive: false // Drag is PENDING, not active yet
             };
-            // Pointer capture and 'dragging' class will be handled in pointermove
-            // if movement exceeds a threshold. This also helps distinguish tap/long-press from drag.
-        }
-    },
-
-    /**
-     * Called from global pointermove.
-     * If an icon drag is pending, this will activate it if movement exceeds threshold.
-     */
-    activatePendingIconDrag: (pointerId) => {
-        if (state.dragInfo && state.dragInfo.type === 'icon-drag' && state.dragInfo.pointerId === pointerId && !state.dragInfo.isActive) {
-            // Drag is now active
-            state.dragInfo.isActive = true;
-            state.dragInfo.element.classList.add('dragging');
-            state.dragInfo.element.style.zIndex = '15'; // Ensure dragging icon is above others
-            try {
-                domElements.desktopElement.setPointerCapture(pointerId);
-            } catch (e) {
-                console.warn("DM: Error setting pointer capture for icon drag:", e);
-            }
-            clearTimeout(state.longPressTimer); // Crucial: cancel context menu if drag starts
-            // console.log("DM: Icon drag ACTIVATE, longPressTimer cleared"); // Dev log
+            // DO NOT add 'dragging' class here
+            // DO NOT setPointerCapture here
+            // DO NOT change z-index here yet
         }
     },
 
@@ -288,53 +259,9 @@ export const DesktopManager = {
             if (domElements.desktopElement) domElements.desktopElement.focus(); // For keyboard events
             state.focusedDesktopIconIndex = -1;
         }
-        if (event.pointerType === 'touch') { 
-            clearTimeout(state.longPressTimer); // Clear any pending long press for icon if touch starts on desktop
+        if (event.pointerType === 'touch') { // Clear long press if touch starts on desktop
+            clearTimeout(state.longPressTimer);
         }
-    },
-    
-    /**
-     * Called from global pointerup.
-     * Finalizes icon drag (snapping, saving position) or handles tap-like release.
-     */
-    finalizeIconDragOrTap: (pointerId) => {
-        if (state.dragInfo && state.dragInfo.type === 'icon-drag' && state.dragInfo.pointerId === pointerId) {
-            const iconElement = state.dragInfo.element;
-            if (state.dragInfo.isActive) { // Only if drag was truly active
-                iconElement.classList.remove('dragging');
-                iconElement.style.zIndex = '10'; // Reset z-index
-
-                const snappedPos = DesktopManager.snapToGrid(
-                    parseFloat(iconElement.style.left),
-                    parseFloat(iconElement.style.top)
-                );
-                iconElement.style.left = `${snappedPos.x}px`;
-                iconElement.style.top = `${snappedPos.y}px`;
-
-                state.iconPositions[state.dragInfo.id] = { x: snappedPos.x, y: snappedPos.y };
-                DesktopManager.saveIconPositions();
-                SoundPlayer.playSound('drop');
-            }
-            // If not active, it was a tap or press without significant movement.
-            // The setActiveIcon was already called on pointerdown.
-            // Double-tap is handled in pointerdown.
-            // Long-press for context menu is handled by its own timer in pointerdown,
-            // but it should be cleared if a drag was activated.
-
-            try {
-                if (domElements.desktopElement.hasPointerCapture(pointerId)) {
-                    domElements.desktopElement.releasePointerCapture(pointerId);
-                }
-            } catch (e) {
-                console.warn("DM: Error releasing pointer capture for icon drag:", e);
-            }
-            state.dragInfo = null;
-        }
-        // Clear long press timer on any pointer up if it hasn't fired (e.g. quick tap)
-        // If context menu already shown, this won't hide it, which is fine.
-        // If drag was active, it's already cleared by activatePendingIconDrag.
-        // This is mainly for taps that weren't double-taps and didn't become drags.
-        clearTimeout(state.longPressTimer);
     },
 
     /** Handles keyboard navigation for desktop icons. */
@@ -345,56 +272,34 @@ export const DesktopManager = {
         let handled = false;
         let nextIndex = state.focusedDesktopIconIndex;
         const totalIcons = icons.length;
-        const iconsPerRow = state.iconsPerRow || 
-                          (state.iconGridCellSize.width ? Math.max(1, Math.floor((domElements.desktopElement.clientWidth - CONSTANTS.DESKTOP_PADDING * 2) / state.iconGridCellSize.width)) : 4); // Fallback iconsPerRow
+        const iconsPerRow = state.iconsPerRow || Math.max(1, Math.floor((domElements.desktopElement.clientWidth - CONSTANTS.DESKTOP_PADDING * 2) / state.iconGridCellSize.width)) || 1;
 
         switch (event.key) {
-            case 'ArrowRight': 
-                nextIndex = (nextIndex === -1) ? 0 : (nextIndex + 1) % totalIcons; 
-                handled = true; 
-                break;
-            case 'ArrowLeft': 
-                nextIndex = (nextIndex === -1) ? totalIcons - 1 : (nextIndex - 1 + totalIcons) % totalIcons; 
-                handled = true; 
-                break;
-            case 'ArrowDown': 
-                nextIndex = (nextIndex === -1) ? 0 : Math.min(nextIndex + iconsPerRow, totalIcons - 1); 
-                handled = true; 
-                break;
-            case 'ArrowUp': 
-                nextIndex = (nextIndex === -1) ? totalIcons - 1 : Math.max(nextIndex - iconsPerRow, 0); 
-                handled = true; 
-                break;
-            case 'Home': 
-                nextIndex = 0; 
-                handled = true; 
-                break;
-            case 'End': 
-                nextIndex = totalIcons - 1; 
-                handled = true; 
-                break;
+            case 'ArrowRight': nextIndex = (nextIndex + 1) % totalIcons; handled = true; break;
+            case 'ArrowLeft': nextIndex = (nextIndex - 1 + totalIcons) % totalIcons; handled = true; break;
+            case 'ArrowDown': nextIndex = Math.min(nextIndex + iconsPerRow, totalIcons - 1); handled = true; break;
+            case 'ArrowUp': nextIndex = Math.max(nextIndex - iconsPerRow, 0); handled = true; break;
+            case 'Home': nextIndex = 0; handled = true; break;
+            case 'End': nextIndex = totalIcons - 1; handled = true; break;
             case 'Tab': return; // Allow default tab behavior
         }
 
         if (handled) {
             event.preventDefault();
-            if (nextIndex !== state.focusedDesktopIconIndex) {
+            if (nextIndex !== state.focusedDesktopIconIndex || state.focusedDesktopIconIndex === -1) {
+                 // Special handling if no icon was focused or for edge cases
+                if (state.focusedDesktopIconIndex === -1) {
+                    if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+                        nextIndex = (event.key === 'ArrowUp') ? totalIcons - 1 : 0;
+                    } else {
+                        nextIndex = 0;
+                    }
+                }
                 state.focusedDesktopIconIndex = nextIndex;
                 const iconToFocus = icons[state.focusedDesktopIconIndex];
                 if (iconToFocus) {
-                    DesktopManager.clearActiveIcon(); // Clear previous visual active state
-                    iconToFocus.focus(); // This will also trigger :focus styles from CSS
-                    DesktopManager.setActiveIcon(iconToFocus.id); // Visually mark as active/selected
-                }
-            } else if (state.focusedDesktopIconIndex === -1 && totalIcons > 0) { // First navigation
-                state.focusedDesktopIconIndex = 0; // Default to first icon
-                 if (event.key === 'ArrowUp' || event.key === 'ArrowLeft' || event.key === 'End') {
-                    state.focusedDesktopIconIndex = totalIcons - 1; // Or last if navigating "backwards" initially
-                }
-                const iconToFocus = icons[state.focusedDesktopIconIndex];
-                if (iconToFocus) {
-                    iconToFocus.focus();
-                    DesktopManager.setActiveIcon(iconToFocus.id);
+                    iconToFocus.focus(); // This will also trigger :focus styles
+                    DesktopManager.setActiveIcon(iconToFocus.id); // Visually mark as active
                 }
             }
         }
