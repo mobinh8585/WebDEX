@@ -1,0 +1,884 @@
+/* ~~~~~~~~~~ General Styles & Resets ~~~~~~~~~~ */
+:root {
+    --font-family: "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+    --window-border-radius: 10px;
+    --taskbar-height-val: 44; /* Raw number for JS calculations */
+    --taskbar-height: calc(var(--taskbar-height-val) * 1px);
+    --start-menu-width: 320px;
+    --start-menu-height: 450px;
+
+    --icon-size: 72px;
+    --icon-image-size: calc(var(--icon-size) * 0.45);
+    --icon-label-font-size: 12px;
+    --icon-label-line-height: 1.3;
+    --icon-label-lines: 2;
+    --icon-label-height: calc(var(--icon-label-font-size) * var(--icon-label-line-height) * var(--icon-label-lines) + 2px);
+    --icon-padding: 5px;
+    --icon-margin: 10px;
+    --icon-total-width-for-grid: calc(var(--icon-size) + var(--icon-margin));
+    /* Visual height of the icon box itself, excluding outer margin */
+    --icon-total-height-visual: calc(var(--icon-size) * 0.5 + 8px + var(--icon-label-height) + (2 * var(--icon-padding)));
+     /* Total height one icon takes up in the grid, including its outer margin */
+    --icon-total-height-for-grid: calc(var(--icon-total-height-visual) + var(--icon-margin));
+
+    --control-button-size: 32px;
+
+    --accent-color: #0078d4;
+    --accent-color-light: #2894ff;
+    --accent-color-dark: #005a9e;
+
+    --transition-fast: 0.15s ease-out;
+    --transition-medium: 0.25s ease-out;
+
+    --default-wallpaper-light: url('https://images.unsplash.com/photo-1509021436665-8f07dbf5bf1d?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+    --default-wallpaper-dark: url('https://images.unsplash.com/photo-1536633990139-2e8889155654?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+
+    /* Base Light Theme */
+    --desktop-bg-light: var(--default-wallpaper-light);
+    --taskbar-bg-light: rgba(245, 245, 245, 0.7);
+    --taskbar-border-light: rgba(200, 200, 200, 0.5);
+    --taskbar-text-color-light: #1a1a1a;
+    --start-menu-bg-light: rgba(250, 250, 250, 0.85);
+    --start-menu-border-light: rgba(180, 180, 180, 0.7);
+    --start-menu-item-hover-bg-light: rgba(0, 120, 212, 0.1);
+    --window-bg-light: rgba(252, 252, 252, 0.9);
+    --window-border-light: rgba(150, 150, 150, 0.6);
+    --window-title-bar-bg-light: rgba(230, 230, 230, 0.8);
+    --window-title-bar-text-light: #222;
+    --window-title-bar-active-bg-light: rgba(200, 215, 230, 0.85);
+    --window-control-button-hover-bg-light: rgba(0, 0, 0, 0.1);
+    --window-control-button-close-hover-bg-light: #e81123;
+    --window-control-button-close-hover-text-light: #fff;
+    --context-menu-bg-light: rgba(255, 255, 255, 0.9);
+    --context-menu-border-light: rgba(204, 204, 204, 0.8);
+    --context-menu-item-hover-bg-light: rgba(0, 120, 212, 0.1);
+    --text-color-light: #1c1c1c;
+    --button-bg-light: rgba(235, 235, 235, 0.9);
+    --button-border-light: rgba(180, 180, 180, 0.7);
+    --button-hover-bg-light: rgba(220, 220, 220, 0.95);
+    --input-bg-light: rgba(255, 255, 255, 0.9);
+    --input-border-light: rgba(190, 190, 190, 0.8);
+    --shadow-color-light: rgba(0, 0, 0, 0.15);
+    --scrollbar-thumb-light: #c1c1c1;
+    --scrollbar-track-light: #f1f1f1;
+    --accent-color-light-transparent-light: rgba(0, 120, 212, 0.2);
+
+    /* Base Dark Theme */
+    --desktop-bg-dark: var(--default-wallpaper-dark);
+    --taskbar-bg-dark: rgba(30, 30, 30, 0.7);
+    --taskbar-border-dark: rgba(80, 80, 80, 0.5);
+    --taskbar-text-color-dark: #f0f0f0;
+    --start-menu-bg-dark: rgba(40, 40, 40, 0.85);
+    --start-menu-border-dark: rgba(90, 90, 90, 0.7);
+    --start-menu-item-hover-bg-dark: rgba(255, 255, 255, 0.1);
+    --window-bg-dark: rgba(45, 45, 45, 0.9);
+    --window-border-dark: rgba(100, 100, 100, 0.6);
+    --window-title-bar-bg-dark: rgba(55, 55, 55, 0.8);
+    --window-title-bar-text-dark: #f0f0f0;
+    --window-title-bar-active-bg-dark: rgba(70, 80, 90, 0.85);
+    --window-control-button-hover-bg-dark: rgba(255, 255, 255, 0.1);
+    --window-control-button-close-hover-bg-dark: #c20f1d;
+    --window-control-button-close-hover-text-dark: #fff;
+    --context-menu-bg-dark: rgba(50, 50, 50, 0.9);
+    --context-menu-border-dark: rgba(110, 110, 110, 0.8);
+    --context-menu-item-hover-bg-dark: rgba(255, 255, 255, 0.1);
+    --text-color-dark: #e0e0e0;
+    --button-bg-dark: rgba(60, 60, 60, 0.9);
+    --button-border-dark: rgba(100, 100, 100, 0.7);
+    --button-hover-bg-dark: rgba(75, 75, 75, 0.95);
+    --input-bg-dark: rgba(50, 50, 50, 0.9);
+    --input-border-dark: rgba(85, 85, 85, 0.8);
+    --shadow-color-dark: rgba(0, 0, 0, 0.3);
+    --scrollbar-thumb-dark: #555;
+    --scrollbar-track-dark: #333;
+    --accent-color-light-transparent-dark: rgba(100, 180, 255, 0.2);
+}
+
+[data-theme="light"] {
+    --desktop-bg: var(--desktop-bg-light);
+    --taskbar-bg: var(--taskbar-bg-light);
+    --taskbar-border: var(--taskbar-border-light);
+    --taskbar-text-color: var(--taskbar-text-color-light);
+    --start-menu-bg: var(--start-menu-bg-light);
+    --start-menu-border: var(--start-menu-border-light);
+    --start-menu-item-hover-bg: var(--start-menu-item-hover-bg-light);
+    --window-bg: var(--window-bg-light);
+    --window-border: var(--window-border-light);
+    --window-title-bar-bg: var(--window-title-bar-bg-light);
+    --window-title-bar-text: var(--window-title-bar-text-light);
+    --window-title-bar-active-bg: var(--window-title-bar-active-bg-light);
+    --window-control-button-hover-bg: var(--window-control-button-hover-bg-light);
+    --window-control-button-close-hover-bg: var(--window-control-button-close-hover-bg-light);
+    --window-control-button-close-hover-text: var(--window-control-button-close-hover-text-light);
+    --context-menu-bg: var(--context-menu-bg-light);
+    --context-menu-border: var(--context-menu-border-light);
+    --context-menu-item-hover-bg: var(--context-menu-item-hover-bg-light);
+    --text-color: var(--text-color-light);
+    --button-bg: var(--button-bg-light);
+    --button-border: var(--button-border-light);
+    --button-hover-bg: var(--button-hover-bg-light);
+    --input-bg: var(--input-bg-light);
+    --input-border: var(--input-border-light);
+    --shadow-color: var(--shadow-color-light);
+    --scrollbar-thumb: var(--scrollbar-thumb-light);
+    --scrollbar-track: var(--scrollbar-track-light);
+    --accent-color-light-transparent: var(--accent-color-light-transparent-light);
+}
+
+[data-theme="dark"] {
+    --desktop-bg: var(--desktop-bg-dark);
+    --taskbar-bg: var(--taskbar-bg-dark);
+    --taskbar-border: var(--taskbar-border-dark);
+    --taskbar-text-color: var(--taskbar-text-color-dark);
+    --start-menu-bg: var(--start-menu-bg-dark);
+    --start-menu-border: var(--start-menu-border-dark);
+    --start-menu-item-hover-bg: var(--start-menu-item-hover-bg-dark);
+    --window-bg: var(--window-bg-dark);
+    --window-border: var(--window-border-dark);
+    --window-title-bar-bg: var(--window-title-bar-bg-dark);
+    --window-title-bar-text: var(--window-title-bar-text-dark);
+    --window-title-bar-active-bg: var(--window-title-bar-active-bg-dark);
+    --window-control-button-hover-bg: var(--window-control-button-hover-bg-dark);
+    --window-control-button-close-hover-bg: var(--window-control-button-close-hover-bg-dark);
+    --window-control-button-close-hover-text: var(--window-control-button-close-hover-text-dark);
+    --context-menu-bg: var(--context-menu-bg-dark);
+    --context-menu-border: var(--context-menu-border-dark);
+    --context-menu-item-hover-bg: var(--context-menu-item-hover-bg-dark);
+    --text-color: var(--text-color-dark);
+    --button-bg: var(--button-bg-dark);
+    --button-border: var(--button-border-dark);
+    --button-hover-bg: var(--button-hover-bg-dark);
+    --input-bg: var(--input-bg-dark);
+    --input-border: var(--input-border-dark);
+    --shadow-color: var(--shadow-color-dark);
+    --scrollbar-thumb: var(--scrollbar-thumb-dark);
+    --scrollbar-track: var(--scrollbar-track-dark);
+    --accent-color-light-transparent: var(--accent-color-light-transparent-dark);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+html { font-size: 16px; }
+body {
+    font-family: var(--font-family);
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    color: var(--text-color);
+    background-color: #000; /* Fallback, desktop bg image should cover this */
+    transition: background-color 0.3s, color 0.3s;
+    user-select: none;
+    -webkit-user-select: none;
+}
+button, input, textarea, select {
+    font-family: inherit;
+    color: var(--text-color);
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+button {
+    cursor: pointer;
+    background-color: var(--button-bg);
+    border: 1px solid var(--button-border);
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+button:hover, button:focus {
+    background-color: var(--button-hover-bg);
+    border-color: var(--accent-color);
+    outline: 1px solid var(--accent-color);
+}
+button:active { transform: translateY(1px); }
+textarea, input[type="text"], input[type="url"], input[type="number"] {
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    padding: 8px 10px;
+    border-radius: 5px;
+    width: 100%;
+}
+textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px var(--accent-color-light-transparent);
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+
+/* ~~~~~~~~~~ Desktop ~~~~~~~~~~ */
+#desktop {
+    width: 100%;
+    height: 100%;
+    background: var(--desktop-bg);
+    position: relative;
+    overflow: hidden;
+    padding: 0; /* Padding handled by JS for icon placement */
+}
+.desktop-icon-grid-cell { /* Currently unused, but could be for visual grid debugging */
+    position: absolute;
+    /* border: 1px dashed rgba(255,255,255,0.1); */
+    pointer-events: none;
+}
+.desktop-icon {
+    width: var(--icon-size);
+    height: var(--icon-total-height-visual);
+    padding: var(--icon-padding);
+    text-align: center;
+    cursor: pointer; /* Changed from grab */
+    border-radius: 6px;
+    transition: background-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    -webkit-user-drag: none;
+    user-drag: none;
+    touch-action: manipulation; /* Prevent default touch actions like scrolling */
+    position: absolute;
+    z-index: 10;
+}
+.desktop-icon.dragging {
+    cursor: grabbing;
+    opacity: 0.7;
+    transform: scale(1.1);
+    z-index: 15; /* Ensure dragging icon is above others */
+    box-shadow: 0 4px 15px var(--shadow-color);
+}
+.desktop-icon:hover,
+.desktop-icon.active-icon,
+.desktop-icon:focus {
+    background-color: rgba(255, 255, 255, 0.25);
+    outline: 1px solid rgba(255, 255, 255, 0.5);
+}
+.desktop-icon .icon-image {
+    font-size: var(--icon-image-size);
+    margin-bottom: 6px;
+    line-height: 1;
+    height: var(--icon-image-size); /* Ensure consistent height */
+    width: var(--icon-image-size); /* Ensure consistent width */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.desktop-icon .icon-label {
+    font-size: var(--icon-label-font-size);
+    color: #fff;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    word-break: break-word;
+    width: 100%;
+    line-height: var(--icon-label-line-height);
+    height: var(--icon-label-height); /* Fixed height for N lines */
+    overflow: hidden;
+    /* For N-line ellipsis */
+    display: -webkit-box;
+    -webkit-line-clamp: var(--icon-label-lines);
+    -webkit-box-orient: vertical;
+    text-overflow: ellipsis;
+}
+
+/* ~~~~~~~~~~ Taskbar ~~~~~~~~~~ */
+#taskbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--taskbar-height);
+    background-color: var(--taskbar-bg);
+    border-top: 1px solid var(--taskbar-border);
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    z-index: 10000;
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    box-shadow: 0 -2px 15px var(--shadow-color);
+}
+#start-button {
+    padding: 0 12px;
+    height: calc(var(--taskbar-height) - 12px);
+    font-size: 1.5rem;
+    border-radius: 5px;
+    margin-right: 10px;
+    background-color: transparent;
+    border: 1px solid transparent; /* For consistent box model */
+    color: var(--taskbar-text-color);
+    line-height: 1; /* Center icon vertically */
+}
+#running-apps {
+    display: flex;
+    height: 100%;
+    flex-grow: 1;
+    overflow-x: auto;
+    scrollbar-width: thin; /* For Firefox */
+}
+.taskbar-app-button {
+    padding: 0 12px;
+    margin: 6px 3px; /* Vertical margin to align with start button height */
+    border: 1px solid transparent;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 60px; /* Ensure some visibility */
+    max-width: 180px; /* Prevent very long titles from taking too much space */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background-color: transparent;
+    color: var(--taskbar-text-color);
+    font-size: 0.85rem;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+.taskbar-app-button .app-icon { margin-right: 8px; font-size: 1rem; }
+.taskbar-app-button.active {
+    background-color: var(--accent-color-light-transparent);
+    border-bottom: 3px solid var(--accent-color);
+    color: var(--accent-color);
+    font-weight: 500;
+}
+.taskbar-app-button.minimized { opacity: 0.7; }
+#system-tray {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 8px;
+    height: 100%;
+    color: var(--taskbar-text-color);
+}
+.tray-icon {
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 3px;
+}
+.tray-icon:hover, .tray-icon:focus {
+    background-color: rgba(255,255,255,0.1); /* General hover, adjust for themes if needed */
+    outline: none;
+}
+.volume-popup {
+    position: absolute;
+    background-color: var(--context-menu-bg);
+    border: 1px solid var(--context-menu-border);
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 -2px 10px var(--shadow-color);
+    z-index: 10001; /* Above taskbar, below active context menu */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.volume-popup input[type="range"] { width: 100px; }
+#clock {
+    padding: 0 12px;
+    font-size: 0.85rem;
+    color: var(--taskbar-text-color);
+    text-align: right;
+    min-width: 60px; /* Ensure time is visible */
+}
+
+/* ~~~~~~~~~~ Start Menu ~~~~~~~~~~ */
+#start-menu {
+    position: fixed;
+    bottom: var(--taskbar-height);
+    left: 5px;
+    width: var(--start-menu-width);
+    max-height: var(--start-menu-height);
+    background-color: var(--start-menu-bg);
+    border: 1px solid var(--start-menu-border);
+    border-bottom: none; /* Joins with taskbar */
+    border-top-left-radius: var(--window-border-radius);
+    border-top-right-radius: var(--window-border-radius);
+    z-index: 9999; /* Below taskbar, above windows generally */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    transform: translateY(20%) scale(0.95);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform var(--transition-medium), opacity var(--transition-medium), visibility 0s var(--transition-medium);
+}
+#start-menu.visible {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    visibility: visible;
+    transition: transform var(--transition-medium), opacity var(--transition-medium), visibility 0s;
+}
+#start-menu-search {
+    padding: 10px;
+    border-bottom: 1px solid var(--start-menu-border);
+}
+#start-menu-search input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-size: 0.9rem;
+}
+#start-menu-apps {
+    list-style: none;
+    padding: 8px 0;
+    overflow-y: auto;
+    flex-grow: 1; /* Takes remaining space */
+}
+#start-menu-apps li {
+    padding: 10px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+    color: var(--text-color);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    border-radius: 4px; /* Slight rounding for items */
+    margin: 2px 8px; /* Spacing around items */
+}
+#start-menu-apps li:hover,
+#start-menu-apps li:focus {
+    background-color: var(--start-menu-item-hover-bg);
+    color: var(--accent-color);
+    outline: none;
+}
+#start-menu-apps li .app-icon {
+    margin-right: 12px;
+    font-size: 1.3em;
+    min-width: 24px; /* For alignment */
+    text-align: center;
+}
+#start-menu-apps hr {
+    border: none;
+    border-top: 1px solid var(--start-menu-border);
+    margin: 8px 20px;
+}
+
+/* ~~~~~~~~~~ Application Windows ~~~~~~~~~~ */
+.app-window {
+    position: absolute;
+    background-color: var(--window-bg);
+    border: 1px solid var(--window-border);
+    border-radius: var(--window-border-radius);
+    box-shadow: 0 8px 30px var(--shadow-color);
+    min-width: 300px;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Important for border-radius and content clipping */
+    transition: opacity var(--transition-medium), transform var(--transition-medium),
+                left var(--transition-medium), top var(--transition-medium),
+                width var(--transition-medium), height var(--transition-medium);
+    touch-action: none; /* Prevent default touch actions on the window itself */
+    z-index: 100; /* Base z-index for windows */
+}
+.app-window.minimized-state {
+    opacity: 0;
+    transform: translateY(calc(var(--taskbar-height) * 2)) scale(0.8);
+    pointer-events: none; /* Not interactive when minimized */
+}
+.app-window.opening {
+    opacity: 0;
+    transform: scale(0.9);
+}
+.app-window.active {
+    border-color: var(--accent-color);
+    box-shadow: 0 10px 40px var(--accent-color-light-transparent); /* More prominent shadow for active */
+}
+.title-bar {
+    height: calc(var(--control-button-size) + 4px);
+    background-color: var(--window-title-bar-bg);
+    color: var(--window-title-bar-text);
+    display: flex;
+    align-items: center;
+    padding: 0 5px 0 12px;
+    cursor: grab;
+    user-select: none; /* Prevent text selection in title bar */
+    -webkit-user-select: none;
+    border-top-left-radius: var(--window-border-radius); /* Match window */
+    border-top-right-radius: var(--window-border-radius); /* Match window */
+    flex-shrink: 0; /* Prevent title bar from shrinking */
+    transition: background-color var(--transition-fast);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+.app-window.active .title-bar { background-color: var(--window-title-bar-active-bg); }
+.title-bar:active { cursor: grabbing; } /* Feedback during drag */
+.title-bar .app-icon { margin-right: 8px; font-size: 1.1em; }
+.title-bar .title {
+    flex-grow: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.window-controls { display: flex; height: 100%; }
+.window-controls button {
+    width: calc(var(--control-button-size) + 10px);
+    height: 100%;
+    border: none;
+    background-color: transparent;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    color: var(--window-title-bar-text);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    border-radius: 0; /* No rounding for individual buttons here */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.window-controls button:last-child { /* Round top-right corner of the close button to match window */
+    border-top-right-radius: calc(var(--window-border-radius) - 1px); /* Adjust for border */
+}
+.window-controls button:hover,
+.window-controls button:focus {
+    background-color: var(--window-control-button-hover-bg);
+    outline: none;
+}
+.window-controls .close-btn:hover,
+.window-controls .close-btn:focus {
+    background-color: var(--window-control-button-close-hover-bg);
+    color: var(--window-control-button-close-hover-text);
+}
+.window-control-icon {
+    width: 10px;
+    height: 10px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.5px;
+}
+.minimize-icon .window-control-icon { stroke-linecap: round; }
+.maximize-icon .window-control-icon { stroke-linejoin: round; }
+.restore-icon .window-control-icon { stroke-linejoin: round; }
+.close-icon .window-control-icon { stroke-linecap: round; }
+
+.window-content {
+    flex-grow: 1; /* Key for content area to fill space */
+    padding: 12px;
+    overflow: auto; /* Scroll content if it overflows */
+    background-color: var(--window-bg); /* Match window background for seamless look */
+    color: var(--text-color);
+    border-bottom-left-radius: var(--window-border-radius); /* Match window */
+    border-bottom-right-radius: var(--window-border-radius); /* Match window */
+    outline: none; /* Remove focus outline from content area itself unless desired */
+}
+/* Resize Handles */
+.resize-handle-wrapper {
+    position: absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    pointer-events: none; /* Wrapper doesn't catch events */
+    z-index: 0; /* Behind content, but part of window structure */
+}
+.resize-handle {
+    position: absolute;
+    background: transparent; /* Invisible */
+    pointer-events: auto; /* Handles themselves are interactive */
+}
+.resize-handle.n { top: -3px; left: 6px; right: 6px; height: 6px; cursor: ns-resize; }
+.resize-handle.s { bottom: -3px; left: 6px; right: 6px; height: 6px; cursor: ns-resize; }
+.resize-handle.e { top: 6px; bottom: 6px; right: -3px; width: 6px; cursor: ew-resize; }
+.resize-handle.w { top: 6px; bottom: 6px; left: -3px; width: 6px; cursor: ew-resize; }
+.resize-handle.ne { top: -3px; right: -3px; width: 12px; height: 12px; cursor: nesw-resize; }
+.resize-handle.nw { top: -3px; left: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
+.resize-handle.se { bottom: -3px; right: -3px; width: 12px; height: 12px; cursor: nwse-resize; }
+.resize-handle.sw { bottom: -3px; left: -3px; width: 12px; height: 12px; cursor: nesw-resize; }
+/* Visual cue for SE resize handle */
+.resize-handle.se::after {
+    content: '';
+    display: block;
+    position: absolute;
+    bottom: 2px; right: 2px;
+    width: 8px; height: 8px;
+    border-right: 2px solid var(--window-title-bar-text); /* Use a theme-aware color */
+    border-bottom: 2px solid var(--window-title-bar-text);
+    opacity: 0.5;
+}
+
+/* ~~~~~~~~~~ App Specific Styles ~~~~~~~~~~ */
+/* Notepad */
+.notepad-textarea { /* Changed from #notepad-textarea to be class-based */
+    width: 100%;
+    height: calc(100% - 50px); /* Adjust based on controls height */
+    resize: none;
+    border: 1px solid var(--input-border);
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    padding: 10px;
+}
+.notepad-controls {
+    padding-top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.notepad-status {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-left: auto; /* Push status to the right */
+}
+
+/* File Explorer */
+[id^="file-explorer-content-"] { /* Dynamic ID starts with... */
+    padding: 0 !important; /* Override default .window-content padding */
+    display: flex;
+    flex-direction: column;
+}
+.fe-path-bar {
+    padding: 8px 12px;
+    background-color: var(--button-bg); /* Themed background */
+    border-bottom: 1px solid var(--input-border);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0; /* Prevent path bar from shrinking */
+}
+.fe-path-bar input { font-size: 0.85rem; padding: 6px 8px; }
+.fe-path-bar button { padding: 6px 8px; font-size: 0.85rem; }
+
+.fe-item-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 15px;
+    padding: 15px;
+    flex-grow: 1; /* Allow grid to take available space and scroll */
+    overflow-y: auto;
+}
+.fe-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    outline: none; /* For programmatic focus, visual handled by :focus */
+}
+.fe-item:hover, .fe-item:focus { background-color: var(--button-hover-bg); }
+.fe-item .icon { font-size: 2.5rem; margin-bottom: 8px; }
+.fe-item .name {
+    font-size: 0.8rem;
+    word-break: break-word;
+    max-height: 2.4em; /* Approx 2 lines */
+    overflow: hidden;
+}
+
+/* Settings */
+[id^="settings-content-"] .setting-item { /* Dynamic ID starts with... */
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--input-border);
+}
+[id^="settings-content-"] .setting-item:last-child { border-bottom: none; }
+[id^="settings-content-"] label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+[id^="settings-content-"] input[type="text"],
+[id^="settings-content-"] input[type="url"],
+[id^="settings-content-"] button,
+[id^="settings-content-"] select {
+    margin-right: 8px;
+    margin-bottom: 5px; /* Spacing for multiple controls in a line */
+}
+.theme-preview {
+    width: 50px;
+    height: 30px;
+    border: 1px solid var(--input-border);
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 10px;
+    border-radius: 4px;
+}
+
+/* Calculator */
+[id^="calculator-content-"] { /* Dynamic ID starts with... */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: auto repeat(5, 1fr); /* Display row + 5 button rows */
+    gap: 5px;
+    height: 100%;
+}
+.calc-display { /* Specific class for calculator display */
+    grid-column: 1 / -1; /* Span all columns */
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    padding: 10px 15px;
+    font-size: 1.8rem;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px; /* Space before buttons */
+    color: var(--text-color);
+}
+[id^="calculator-content-"] button {
+    font-size: 1.2rem;
+    border-radius: 5px;
+    height: 100%; /* Fill grid cell height */
+}
+[id^="calculator-content-"] button.operator {
+    background-color: var(--accent-color-dark);
+    color: white;
+}
+[id^="calculator-content-"] button.operator:hover,
+[id^="calculator-content-"] button.operator:focus {
+    background-color: var(--accent-color);
+}
+[id^="calculator-content-"] button.equals {
+    background-color: var(--accent-color);
+    color: white;
+}
+[id^="calculator-content-"] button.equals:hover,
+[id^="calculator-content-"] button.equals:focus {
+    background-color: var(--accent-color-light);
+}
+[id^="calculator-content-"] button.clear {
+    background-color: #d9534f; /* Specific color for clear */
+    color: white;
+}
+[id^="calculator-content-"] button.clear:hover,
+[id^="calculator-content-"] button.clear:focus {
+    background-color: #c9302c;
+}
+
+/* Image Viewer */
+.image-viewer-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+.image-viewer-controls input[type="url"] { flex-grow: 1; }
+.image-viewer-canvas {
+    width: 100%;
+    height: calc(100% - 50px); /* Adjust based on controls height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--input-border);
+    background-color: var(--input-bg);
+}
+.image-viewer-canvas img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block; /* Remove extra space below image */
+}
+.image-viewer-canvas .message { color: var(--text-color); opacity: 0.7; }
+
+/* Properties Dialog */
+.properties-dialog-content { padding: 10px; font-size: 0.9rem; }
+.properties-dialog-content p { margin-bottom: 8px; }
+.properties-dialog-content strong { margin-right: 5px; }
+
+/* Web Browser */
+.web-browser-controls {
+    display: flex;
+    gap: 5px;
+    padding: 8px;
+    background-color: var(--button-bg);
+    border-bottom: 1px solid var(--input-border);
+    flex-shrink: 0;
+}
+.web-browser-controls input[type="url"] {
+    flex-grow: 1;
+    font-size: 0.85rem;
+    padding: 6px 8px;
+}
+.web-browser-controls button {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    min-width: 30px; /* For smaller icon buttons */
+}
+.web-browser-iframe-container {
+    flex-grow: 1;
+    overflow: hidden;
+    background-color: var(--input-bg); /* Background for when iframe is hidden/fails */
+    display: flex; /* For centering message */
+    align-items: center;
+    justify-content: center;
+    position: relative; /* For absolute positioning of iframe if needed, or message */
+}
+.web-browser-iframe-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+.web-browser-message {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+
+/* ~~~~~~~~~~ Context Menu ~~~~~~~~~~ */
+#context-menu {
+    position: fixed;
+    background-color: var(--context-menu-bg);
+    border: 1px solid var(--context-menu-border);
+    border-radius: 8px;
+    box-shadow: 0 5px 20px var(--shadow-color);
+    z-index: 10001; /* High z-index */
+    padding: 6px 0;
+    min-width: 200px;
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    opacity: 0;
+    transform: scale(0.95);
+    visibility: hidden;
+    transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0s var(--transition-fast);
+}
+#context-menu.visible {
+    opacity: 1;
+    transform: scale(1);
+    visibility: visible;
+    transition: opacity var(--transition-fast), transform var(--transition-fast), visibility 0s;
+}
+#context-menu ul { list-style: none; }
+#context-menu li {
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
+    display: flex;
+    align-items: center;
+    outline: none; /* Focus style handled by :focus */
+}
+#context-menu li .icon { margin-right: 10px; }
+#context-menu li:hover,
+#context-menu li:focus { /* Consistent focus and hover */
+    background-color: var(--context-menu-item-hover-bg);
+    color: var(--accent-color);
+}
+#context-menu hr {
+    border: none;
+    border-top: 1px solid var(--context-menu-border);
+    margin: 4px 0; /* Tighter margin for separators */
+}
+
+/* ~~~~~~~~~~ Utility Classes ~~~~~~~~~~ */
+.hidden { display: none !important; }
+
+/* Snap Preview (for window snapping) */
+#snap-preview {
+    position: fixed;
+    background-color: var(--accent-color);
+    opacity: 0.2;
+    border: 2px dashed var(--accent-color-dark);
+    z-index: 9998; /* Below Start Menu/Context Menu but above windows */
+    pointer-events: none;
+    transition: all 0.1s ease-out; /* Smooth transitions for position/size */
+}

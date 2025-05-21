@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WebDEX</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="desktop" tabindex="-1"></div>
+
+    <div id="start-menu">
+        <div id="start-menu-search"><input type="text" placeholder="Type to search..." aria-label="Search applications"></div>
+        <ul id="start-menu-apps" role="menu"></ul>
+    </div>
+
+    <div id="taskbar">
+        <button id="start-button" title="Start" aria-label="Start menu">🚀</button>
+        <div id="running-apps"></div>
+        <div id="system-tray"></div>
+        <div id="clock"></div>
+    </div>
+
+    <div id="context-menu" role="menu"><ul></ul></div>
+    <div id="snap-preview" class="hidden" aria-hidden="true"></div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
