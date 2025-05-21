@@ -58,4 +58,4 @@ export function loadInitialStateFromLocalStorage() {
             state.lastStoredDesktopWidth = parsedData.desktopWidth || 0;
         }
     } catch (e) { console.warn("Error reading icon positions from localStorage:", e); }
-};
+}

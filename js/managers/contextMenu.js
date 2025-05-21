@@ -4,7 +4,7 @@ import {
     CONTEXT_MENU_DESKTOP_CONFIG,
     CONTEXT_MENU_ICON_CONFIG,
     CONTEXT_MENU_FE_ITEM_CONFIG
-} from '../core/svgIcons.js';
+} from '../core/uiConfigs.js';
 import { sanitizeFilename, getIconForFileType } from '../core/utils.js';
 import { SoundPlayer } from '../core/soundPlayer.js';
 import { AppRegistry } from '../apps/appRegistry.js';
@@ -30,7 +30,7 @@ export const ContextMenu = {
             }
         });
         domElements.contextMenuElement.addEventListener('contextmenu', e => e.preventDefault()); // Prevent nested context menu
-    };
+    },
 
     _renderItems: (itemsConfig, dataContext = {}) => {
         if (!domElements.contextMenuElement) return;
@@ -68,7 +68,7 @@ export const ContextMenu = {
         if (!domElements.contextMenuElement.contains(ul)) domElements.contextMenuElement.appendChild(ul);
         const firstItem = ul.querySelector('li[tabindex="0"]'); // Focus first actionable item
         if (firstItem) firstItem.focus();
-    };
+    },
 
     _showAt: (x, y) => {
         if (!domElements.contextMenuElement) return;
@@ -87,12 +87,12 @@ export const ContextMenu = {
 
         domElements.contextMenuElement.style.left = `${x}px`;
         domElements.contextMenuElement.style.top = `${y}px`;
-    };
+    },
 
     showForDesktop: (event) => {
         ContextMenu._renderItems(CONTEXT_MENU_DESKTOP_CONFIG);
         ContextMenu._showAt(event.clientX, event.clientY);
-    };
+    },
 
     showForIcon: (event, iconEl) => {
         event.preventDefault();
@@ -109,7 +109,7 @@ export const ContextMenu = {
             y = event.clientY;
         }
         ContextMenu._showAt(x, y);
-    };
+    },
 
     showForFileExplorerItem: (event, itemName, itemType, itemPath, windowId) => {
         event.preventDefault();
@@ -122,16 +122,16 @@ export const ContextMenu = {
             windowId: windowId
         });
         ContextMenu._showAt(event.clientX, event.clientY);
-    };
+    },
 
     hide: () => {
         if (domElements.contextMenuElement) domElements.contextMenuElement.classList.remove('visible');
         clearTimeout(state.longPressTimer); // Clear long press if menu is hidden for any reason
-    };
+    },
 
     isVisible: () => {
         return domElements.contextMenuElement && domElements.contextMenuElement.classList.contains('visible');
-    };
+    },
 
     // Central action handler, delegates to specific handlers
     _handleAction: async (listItem) => {
@@ -171,7 +171,7 @@ export const ContextMenu = {
             default:
                 console.warn("ContextMenu: Unknown action:", action, data);
         }
-    };
+    },
 
     // Specific action handlers
     _actionNewTextFile: async (data) => {
@@ -193,7 +193,7 @@ export const ContextMenu = {
                 alert("Failed to create text file.");
             }
         }
-    };
+    },
     _actionOpenItem: (data) => {
         const { iconType, appId, filePath, itemName } = data;
         if (iconType === 'app' && appId) {
@@ -207,7 +207,7 @@ export const ContextMenu = {
                 alert(`Opening ${iconType} "${itemName || filePath}" (Handler not fully implemented for this type)`);
             }
         }
-    };
+    },
     _actionDeleteItem: async (data) => {
         const { iconType, filePath, itemName, targetId /* from FE */ } = data;
         const nameToDelete = itemName || targetId || filePath;
@@ -230,7 +230,7 @@ export const ContextMenu = {
                 alert("Failed to delete item.");
             }
         }
-    };
+    },
     _actionProperties: (data) => {
         const { itemName, targetId, iconType, targetType, filePath, appId, windowId } = data;
         AppRegistry.launchApp('propertiesDialog', {
@@ -240,13 +240,13 @@ export const ContextMenu = {
             appId: appId, // For app shortcuts
             windowId: windowId // Context window if any
         });
-    };
+    },
     _actionFeOpen: (data) => {
         const { windowId, targetId, targetType, filePath } = data; // targetId is itemName here
         if (windowId && targetId && targetType && filePath && FileExplorerApp.handleItemAction) {
             FileExplorerApp.handleItemAction(windowId, targetId, targetType, 'open', filePath);
         }
-    };
+    },
     _actionFeDelete: async (data) => {
         const { windowId, targetId, filePath } = data; // targetId is itemName here
         if (!confirm(`Are you sure you want to delete "${targetId}"? This action cannot be undone.`)) return;
@@ -266,7 +266,7 @@ export const ContextMenu = {
                 alert("Failed to delete item.");
             }
         }
-    };
+    },
     _actionFeProperties: (data) => {
         const { windowId, targetId, targetType, filePath } = data;
         AppRegistry.launchApp('propertiesDialog', {
@@ -275,5 +275,5 @@ export const ContextMenu = {
             filePath: filePath,
             windowId: windowId
         });
-    };
+    }
 };

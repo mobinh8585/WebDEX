@@ -14,8 +14,8 @@ export const ThemeManager = {
         if (DesktopManager && typeof DesktopManager.loadWallpaper === 'function') {
             DesktopManager.loadWallpaper();
         }
-    };
+    },
     toggleTheme: () => {
         ThemeManager.applyTheme(state.currentTheme === 'light' ? 'dark' : 'light');
-    };
+    }
 };
