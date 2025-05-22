@@ -23,7 +23,8 @@ export const calculatorAppConfig = {
     name:'Calculator', icon:'🧮', width:320, height:450, allowMultiple:true,
     launch: (windowId, contentArea) => {
         if(!contentArea) return;
-        contentArea.id = `calculator-content-${windowId}`; // For specific styling
+        contentArea.classList.add('calculator-app-content');
+        // contentArea.id = `calculator-content-${windowId}`; // This ID can be removed if not used by JS directly
 
         const displayId = `calc-display-${windowId}`;
         contentArea.innerHTML = `
@@ -55,7 +56,7 @@ export const calculatorAppConfig = {
                 const value = button.dataset.val;
 
                 if (!isNaN(parseFloat(value))) { // Number
-                    if (waitingForOperand || currentInput === '0') {
+                    if (currentInput === 'Error' || waitingForOperand || currentInput === '0') { // Added currentInput === 'Error'
                         currentInput = value;
                         waitingForOperand = false;
                     } else {

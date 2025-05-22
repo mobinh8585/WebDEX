@@ -626,7 +626,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
 }
 
 /* File Explorer */
-[id^="file-explorer-content-"] { /* Dynamic ID starts with... */
+.file-explorer-app-content { /* Dynamic ID starts with... */
     padding: 0 !important; /* Override default .window-content padding */
     display: flex;
     flex-direction: column;
@@ -672,21 +672,21 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
 }
 
 /* Settings */
-[id^="settings-content-"] .setting-item { /* Dynamic ID starts with... */
+.settings-app-content .setting-item { /* Dynamic ID starts with... */
     margin-bottom: 20px;
     padding-bottom: 15px;
     border-bottom: 1px solid var(--input-border);
 }
-[id^="settings-content-"] .setting-item:last-child { border-bottom: none; }
-[id^="settings-content-"] label {
+.settings-app-content .setting-item:last-child { border-bottom: none; }
+.settings-app-content label {
     display: block;
     margin-bottom: 8px;
     font-weight: 500;
 }
-[id^="settings-content-"] input[type="text"],
-[id^="settings-content-"] input[type="url"],
-[id^="settings-content-"] button,
-[id^="settings-content-"] select {
+.settings-app-content input[type="text"],
+.settings-app-content input[type="url"],
+.settings-app-content button,
+.settings-app-content select {
     margin-right: 8px;
     margin-bottom: 5px; /* Spacing for multiple controls in a line */
 }
@@ -701,7 +701,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
 }
 
 /* Calculator */
-[id^="calculator-content-"] { /* Dynamic ID starts with... */
+.calculator-app-content { /* Dynamic ID starts with... */
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: auto repeat(5, 1fr); /* Display row + 5 button rows */
@@ -721,33 +721,33 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     margin-bottom: 5px; /* Space before buttons */
     color: var(--text-color);
 }
-[id^="calculator-content-"] button {
+.calculator-app-content button {
     font-size: 1.2rem;
     border-radius: 5px;
     height: 100%; /* Fill grid cell height */
 }
-[id^="calculator-content-"] button.operator {
+.calculator-app-content button.operator {
     background-color: var(--accent-color-dark);
     color: white;
 }
-[id^="calculator-content-"] button.operator:hover,
-[id^="calculator-content-"] button.operator:focus {
+.calculator-app-content button.operator:hover,
+.calculator-app-content button.operator:focus {
     background-color: var(--accent-color);
 }
-[id^="calculator-content-"] button.equals {
+.calculator-app-content button.equals {
     background-color: var(--accent-color);
     color: white;
 }
-[id^="calculator-content-"] button.equals:hover,
-[id^="calculator-content-"] button.equals:focus {
+.calculator-app-content button.equals:hover,
+.calculator-app-content button.equals:focus {
     background-color: var(--accent-color-light);
 }
-[id^="calculator-content-"] button.clear {
+.calculator-app-content button.clear {
     background-color: #d9534f; /* Specific color for clear */
     color: white;
 }
-[id^="calculator-content-"] button.clear:hover,
-[id^="calculator-content-"] button.clear:focus {
+.calculator-app-content button.clear:hover,
+.calculator-app-content button.clear:focus {
     background-color: #c9302c;
 }
 

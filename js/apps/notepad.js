@@ -17,6 +17,7 @@ const NotepadAppMethods = {
 export const notepadAppConfig = {
     name: 'Notepad', icon: '📝', width: 550, height: 450, allowMultiple: true, autoFocusContent: false,
     launch: async (windowId, contentArea, params) => {
+        contentArea.classList.add('notepad-app-content'); // Add this line
         const internalState = {
             dirty: false,
             currentContent: '',

@@ -7,7 +7,8 @@ export const settingsAppConfig = {
     name:'Settings', icon:'⚙️', width:500, height:420, allowMultiple:false,
     launch: (windowId, contentArea) => {
         if(!contentArea) return;
-        contentArea.id = `settings-content-${windowId}`; // For specific styling
+        contentArea.classList.add('settings-app-content');
+        // contentArea.id = `settings-content-${windowId}`; // For specific styling
 
         const currentWallpaperLight = localStorage.getItem('desktop-wallpaper-light') || '';
         const currentWallpaperDark = localStorage.getItem('desktop-wallpaper-dark') || '';

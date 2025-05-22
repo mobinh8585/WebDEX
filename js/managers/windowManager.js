@@ -1,9 +1,6 @@
-// Placeholder for missing SVG_ICONS definition (as discussed previously)
-const SVG_ICONS = { minimize: '➖', maximize: '🔲', restore: '🔳', close: '❌' };
-
 import { CONSTANTS } from '../core/constants.js';
 import { state } from '../core/state.js';
-// import { SVG_ICONS } from '../core/svgIcons.js'; // Problematic import
+import { WINDOW_CONTROL_ICONS } from '../core/uiConfigs.js';
 import { generateId, getAppConfig, getEventCoordinates } from '../core/utils.js';
 import { SoundPlayer } from '../core/soundPlayer.js';
 import { AppRegistry } from '../apps/appRegistry.js';
@@ -79,9 +76,9 @@ export const WindowManager = {
                 <span class="app-icon">${icon || '🚀'}</span>
                 <span class="title">${title}</span>
                 <div class="window-controls">
-                    <button class="minimize-btn" data-action="minimize" title="Minimize" aria-label="Minimize" tabindex="0">${SVG_ICONS.minimize}</button>
-                    <button class="maximize-btn" data-action="maximize" title="Maximize" aria-label="Maximize" tabindex="0">${SVG_ICONS.maximize}</button>
-                    <button class="close-btn" data-action="close" title="Close" aria-label="Close" tabindex="0">${SVG_ICONS.close}</button>
+                    <button class="minimize-btn" data-action="minimize" title="Minimize" aria-label="Minimize" tabindex="0">${WINDOW_CONTROL_ICONS.minimize}</button>
+                    <button class="maximize-btn" data-action="maximize" title="Maximize" aria-label="Maximize" tabindex="0">${WINDOW_CONTROL_ICONS.maximize}</button>
+                    <button class="close-btn" data-action="close" title="Close" aria-label="Close" tabindex="0">${WINDOW_CONTROL_ICONS.close}</button>
                 </div>
             </div>
             <div class="window-content"></div>`;
@@ -202,13 +199,13 @@ export const WindowManager = {
         if (winData.isMaximized) {
             winData.element.style.left = winData.originalRect.x + 'px'; winData.element.style.top = winData.originalRect.y + 'px';
             winData.element.style.width = winData.originalRect.width + 'px'; winData.element.style.height = winData.originalRect.height + 'px';
-            winData.isMaximized = false; maximizeButton.innerHTML = SVG_ICONS.maximize; maximizeButton.title = "Maximize"; maximizeButton.setAttribute('aria-label', "Maximize");
+            winData.isMaximized = false; maximizeButton.innerHTML = WINDOW_CONTROL_ICONS.maximize; maximizeButton.title = "Maximize"; maximizeButton.setAttribute('aria-label', "Maximize");
             resizeHandleWrapper.style.display = 'block';
         } else {
             winData.originalRect = { x: winData.element.offsetLeft, y: winData.element.offsetTop, width: winData.element.offsetWidth, height: winData.element.offsetHeight };
             winData.element.style.left = '0px'; winData.element.style.top = '0px';
             winData.element.style.width = '100vw'; winData.element.style.height = `calc(100vh - ${CONSTANTS.TASKBAR_HEIGHT}px)`;
-            winData.isMaximized = true; maximizeButton.innerHTML = SVG_ICONS.restore; maximizeButton.title = "Restore"; maximizeButton.setAttribute('aria-label', "Restore");
+            winData.isMaximized = true; maximizeButton.innerHTML = WINDOW_CONTROL_ICONS.restore; maximizeButton.title = "Restore"; maximizeButton.setAttribute('aria-label', "Restore");
             resizeHandleWrapper.style.display = 'none';
         }
         const transitionDuration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--transition-fast') || '0.15s') * 1000;
@@ -382,13 +379,13 @@ export const WindowManager = {
         element.style.transition = 'all var(--transition-medium)';
         if (state.snapTarget === 'top') {
             element.style.left = '0px'; element.style.top = '0px'; element.style.width = '100vw'; element.style.height = `calc(100vh - ${CONSTANTS.TASKBAR_HEIGHT}px)`;
-            winData.isMaximized = true; if (maximizeButton) maximizeButton.innerHTML = SVG_ICONS.restore; if (resizeHandleWrapper) resizeHandleWrapper.style.display = 'none';
+            winData.isMaximized = true; if (maximizeButton) maximizeButton.innerHTML = WINDOW_CONTROL_ICONS.restore; if (resizeHandleWrapper) resizeHandleWrapper.style.display = 'none';
         } else if (state.snapTarget === 'left') {
             element.style.left = '0px'; element.style.top = '0px'; element.style.width = '50vw'; element.style.height = `calc(100vh - ${CONSTANTS.TASKBAR_HEIGHT}px)`;
-            winData.isMaximized = false; if (maximizeButton) maximizeButton.innerHTML = SVG_ICONS.maximize; if (resizeHandleWrapper) resizeHandleWrapper.style.display = 'block';
+            winData.isMaximized = false; if (maximizeButton) maximizeButton.innerHTML = WINDOW_CONTROL_ICONS.maximize; if (resizeHandleWrapper) resizeHandleWrapper.style.display = 'block';
         } else if (state.snapTarget === 'right') {
             element.style.left = '50vw'; element.style.top = '0px'; element.style.width = '50vw'; element.style.height = `calc(100vh - ${CONSTANTS.TASKBAR_HEIGHT}px)`;
-            winData.isMaximized = false; if (maximizeButton) maximizeButton.innerHTML = SVG_ICONS.maximize; if (resizeHandleWrapper) resizeHandleWrapper.style.display = 'block';
+            winData.isMaximized = false; if (maximizeButton) maximizeButton.innerHTML = WINDOW_CONTROL_ICONS.maximize; if (resizeHandleWrapper) resizeHandleWrapper.style.display = 'block';
         }
         const transitionDuration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--transition-medium') || '.25s') * 1000;
         setTimeout(() => { if (element) { element.style.transition = `opacity var(--transition-medium), transform var(--transition-medium), left var(--transition-medium), top var(--transition-medium), width var(--transition-medium), height var(--transition-medium)`; } }, transitionDuration);

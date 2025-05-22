@@ -109,21 +109,42 @@ export const propertiesDialogAppConfig = {
 
         contentArea.innerHTML = `
             <div class="properties-dialog-content">
-                <p style="display:flex; align-items:center; margin-bottom:15px;">
-                    <span style="font-size:2rem; margin-right:10px;">${icon}</span>
-                    <strong style="font-size:1.1rem;">${name}</strong>
-                </p>
+                <div id="properties-header-${windowId}" style="display:flex; align-items:center; margin-bottom:15px;">
+                    <span id="properties-icon-${windowId}" style="font-size:2rem; margin-right:10px;"></span>
+                    <strong id="properties-name-${windowId}" style="font-size:1.1rem;"></strong>
+                </div>
                 <hr style="margin-bottom:10px;">
-                <p><strong>Type:</strong> ${type}</p>
-                <p><strong>Location:</strong> ${location}</p>
-                ${size !== "N/A" ? `<p><strong>Size:</strong> ${size}</p>` : ''}
-                <p><strong>Created:</strong> ${created}</p>
-                <p><strong>Modified:</strong> ${modified}</p>
+                <p><strong>Type:</strong> <span id="properties-type-${windowId}"></span></p>
+                <p><strong>Location:</strong> <span id="properties-location-${windowId}"></span></p>
+                ${size !== "N/A" ? `<p><strong>Size:</strong> <span id="properties-size-${windowId}"></span></p>` : ''}
+                <p><strong>Created:</strong> <span id="properties-created-${windowId}"></span></p>
+                <p><strong>Modified:</strong> <span id="properties-modified-${windowId}"></span></p>
                 <hr style="margin: 15px 0 10px 0;">
                 <div style="text-align:right;">
                     <button id="props-ok-${params.targetId ? params.targetId.replace(/[^a-zA-Z0-9]/g,'') : 'generic'}" class="properties-ok-button">OK</button>
                 </div>
             </div>`;
+
+        // Now populate dynamic parts safely
+        const iconSpan = contentArea.querySelector(`#properties-icon-${windowId}`);
+        const nameStrong = contentArea.querySelector(`#properties-name-${windowId}`);
+        const typeSpan = contentArea.querySelector(`#properties-type-${windowId}`);
+        const locationSpan = contentArea.querySelector(`#properties-location-${windowId}`);
+        const createdSpan = contentArea.querySelector(`#properties-created-${windowId}`);
+        const modifiedSpan = contentArea.querySelector(`#properties-modified-${windowId}`);
+
+        if (iconSpan) iconSpan.innerHTML = icon; // Icon might be HTML (emoji or other simple HTML), ensure it's safe. If it's just text/emoji, textContent is safer. Given current usage of emojis, .innerHTML is likely fine for icon.
+        if (nameStrong) nameStrong.textContent = name;
+        if (typeSpan) typeSpan.textContent = type;
+        if (locationSpan) locationSpan.textContent = location;
+        if (createdSpan) createdSpan.textContent = created;
+        if (modifiedSpan) modifiedSpan.textContent = modified;
+
+        if (size !== "N/A") {
+            const sizeSpan = contentArea.querySelector(`#properties-size-${windowId}`);
+            if (sizeSpan) sizeSpan.textContent = size;
+        }
+
         const okButton = contentArea.querySelector('.properties-ok-button');
         if (okButton && winEl) {
             okButton.onclick = () => WindowManager.closeWindow(winEl.id);

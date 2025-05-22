@@ -179,8 +179,7 @@ export const DesktopManager = {
                 // Generic open for other file types (e.g., image viewer for images)
                 const ext = getIconForFileType(filePath); // Re-check based on actual extension for safety
                 if (['🖼️'].includes(ext)) { // Check against image icon
-                    AppRegistry.launchApp('imageViewer', { initialUrl: `file://${filePath}` /* Placeholder, actual file loading needs FSM read */ });
-                     alert(`Opening image: ${filePath} (Direct file URL for images from FSM is complex; use Image Viewer's 'Load from file' or paste path for now if it were a web URL)`);
+                    AppRegistry.launchApp('imageViewer', { initialUrl: `file://${filePath}` });
                 } else {
                     alert(`Opening ${iconType}: ${filePath} (Handler not fully implemented for this file type)`);
                 }

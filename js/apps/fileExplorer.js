@@ -17,8 +17,7 @@ export const FileExplorerApp = { // Exporting the object directly for ContextMen
                     if (getFileExtension(itemName) === 'txt') {
                         AppRegistry.launchApp('notepad', { filePath: itemPath });
                     } else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(getFileExtension(itemName))) {
-                        AppRegistry.launchApp('imageViewer', { initialUrl: `file://${itemPath}` }); // Placeholder, see notes in DesktopManager
-                        alert(`Opening image: ${itemPath} (Direct file URL for images from FSM is complex; use Image Viewer's 'Load from file' or paste path for now if it were a web URL)`);
+                        AppRegistry.launchApp('imageViewer', { initialUrl: `file://${itemPath}` });
                     }
                     else {
                         alert(`Opening file: "${itemName}" (Generic file open for this type is not fully implemented yet)`);
@@ -33,7 +32,8 @@ export const fileExplorerAppConfig = {
     name: 'File Explorer', icon: '📁', width: 750, height: 550, allowMultiple: true, autoFocusContent: false,
     launch: (windowId, contentArea, params) => {
         if (!contentArea) { console.error("FE: Content area not found for", windowId); return; }
-        contentArea.id = `file-explorer-content-${windowId}`; // For specific styling
+        contentArea.classList.add('file-explorer-app-content');
+        // contentArea.id = `file-explorer-content-${windowId}`; // For specific styling
 
         let currentExplorerPath = params.initialPath ? params.initialPath : '/';
         if (currentExplorerPath !== '/' && !currentExplorerPath.endsWith('/')) currentExplorerPath += '/';

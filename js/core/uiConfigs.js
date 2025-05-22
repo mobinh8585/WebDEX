@@ -49,3 +49,4 @@ export const CONTEXT_MENU_FE_ITEM_CONFIG = {
         { label: 'Properties', action: 'fe-properties', icon: 'ℹ️' },
     ]
 };
+export const WINDOW_CONTROL_ICONS = { minimize: '➖', maximize: '🔲', restore: '🔳', close: '❌' };
