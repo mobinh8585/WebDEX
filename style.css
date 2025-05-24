@@ -30,8 +30,14 @@
     --transition-fast: 0.15s ease-out;
     --transition-medium: 0.25s ease-out;
 
+    /* Custom Cursor Variables */
+    --cursor-size: 24px;
+    --cursor-dot-size: 6px;
+    --cursor-border-width: 2px;
+    --cursor-transition-duration: 0.15s;
+
     --default-wallpaper-light: url('https://images.unsplash.com/photo-1509021436665-8f07dbf5bf1d?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
-    --default-wallpaper-dark: url('https://images.unsplash.com/photo-1536633990139-2e8889155654?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat;
+    --default-wallpaper-dark: url('https://images.unsplash.com/photo-1536633990139-2e8889155654?auto:format&fit=crop&w=1920&q=80') center/cover no-repeat;
 
     /* Base Light Theme */
     --desktop-bg-light: var(--default-wallpaper-light);
@@ -92,10 +98,26 @@
     --scrollbar-thumb-dark: #555;
     --scrollbar-track-dark: #333;
     --accent-color-light-transparent-dark: rgba(100, 180, 255, 0.2);
+
+    /* In-App Dialog Specific Variables */
+    --dialog-overlay-bg: rgba(0, 0, 0, 0.6);
+    --dialog-bg: var(--window-bg);
+    --dialog-border: var(--window-border);
+    --dialog-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    --dialog-text-color: var(--text-color);
+    --dialog-input-bg: var(--input-bg);
+    --dialog-input-border: var(--input-border);
+    --dialog-button-bg: var(--button-bg);
+    --dialog-button-border: var(--button-border);
+    --dialog-button-text-color: var(--button-text-color);
+    --dialog-button-hover-bg: var(--button-hover-bg);
+    --dialog-transition-duration: 0.2s;
 }
 
 [data-theme="light"] {
     --desktop-bg: var(--desktop-bg-light);
+    --cursor-color: rgba(0, 0, 0, 0.8); /* Dark for light theme */
+    --cursor-outline-color: rgba(0, 0, 0, 0.2);
     --taskbar-bg: var(--taskbar-bg-light);
     --taskbar-border: var(--taskbar-border-light);
     --taskbar-text-color: var(--taskbar-text-color-light);
@@ -127,6 +149,8 @@
 
 [data-theme="dark"] {
     --desktop-bg: var(--desktop-bg-dark);
+    --cursor-color: rgba(255, 255, 255, 0.8); /* Light for dark theme */
+    --cursor-outline-color: rgba(255, 255, 255, 0.2);
     --taskbar-bg: var(--taskbar-bg-dark);
     --taskbar-border: var(--taskbar-border-dark);
     --taskbar-text-color: var(--taskbar-text-color-dark);
@@ -154,6 +178,114 @@
     --scrollbar-thumb: var(--scrollbar-thumb-dark);
     --scrollbar-track: var(--scrollbar-track-dark);
     --accent-color-light-transparent: var(--accent-color-light-transparent-dark);
+
+    /* Dark Theme Dialog Overrides */
+    --dialog-overlay-bg: rgba(0, 0, 0, 0.7);
+    --dialog-bg: var(--window-bg-dark);
+    --dialog-border: var(--window-border-dark);
+    --dialog-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --dialog-text-color: var(--text-color-dark);
+    --dialog-input-bg: var(--input-bg-dark);
+    --dialog-input-border: var(--input-border-dark);
+    --dialog-button-bg: var(--button-bg-dark);
+    --dialog-button-border: var(--button-border-dark);
+    --dialog-button-text-color: var(--button-text-color-dark);
+    --dialog-button-hover-bg: var(--button-hover-bg-dark);
+}
+
+/* ~~~~~~~~~~ In-App Dialogs ~~~~~~~~~~ */
+.in-app-dialog-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--dialog-overlay-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none; /* Initially non-interactive */
+    transition: opacity var(--dialog-transition-duration) ease-out;
+}
+
+.in-app-dialog-overlay.show {
+    opacity: 1;
+    pointer-events: auto; /* Interactive when shown */
+}
+
+.in-app-dialog-box {
+    background: var(--dialog-bg);
+    border: 1px solid var(--dialog-border);
+    box-shadow: var(--dialog-shadow);
+    padding: 25px; /* Slightly more padding */
+    border-radius: var(--window-border-radius);
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Increased gap */
+    max-width: 450px; /* Slightly wider */
+    width: 90%;
+    color: var(--dialog-text-color);
+    transform: translateY(-30px) scale(0.9); /* More pronounced initial transform */
+    opacity: 0;
+    transition: transform var(--dialog-transition-duration) ease-out, opacity var(--dialog-transition-duration) ease-out;
+    backdrop-filter: blur(8px); /* Subtle blur for the dialog itself */
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.in-app-dialog-overlay.show .in-app-dialog-box {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+.in-app-dialog-box p {
+    color: var(--dialog-text-color);
+    margin: 0;
+    font-size: 1.05rem; /* Slightly larger text */
+    line-height: 1.5;
+}
+
+.in-app-dialog-box input[type="text"] {
+    padding: 12px; /* More padding for input */
+    border: 1px solid var(--dialog-input-border);
+    border-radius: 8px; /* More rounded corners */
+    background: var(--dialog-input-bg);
+    color: var(--dialog-text-color);
+    font-size: 1.05rem;
+    width: 100%;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); /* Subtle inner shadow */
+}
+
+.in-app-dialog-box input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-color-light-transparent); /* More prominent focus ring */
+}
+
+.in-app-dialog-box .dialog-button {
+    padding: 10px 20px; /* More padding for buttons */
+    background: var(--dialog-button-bg);
+    color: var(--dialog-button-text-color);
+    border: 1px solid var(--dialog-button-border);
+    border-radius: 8px; /* More rounded corners */
+    cursor: default; /* Changed to default */
+    font-size: 1rem; /* Slightly larger font */
+    font-weight: 500;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), transform 0.1s ease-out;
+}
+
+.in-app-dialog-box .dialog-button:hover {
+    background-color: var(--dialog-button-hover-bg);
+    border-color: var(--accent-color);
+    transform: translateY(-1px); /* Subtle lift effect */
+}
+
+.in-app-dialog-box .dialog-button:active {
+    transform: translateY(0); /* Press down effect */
+}
+
+.in-app-dialog-box .dialog-button-container {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px; /* Increased gap between buttons */
 }
 
 * {
@@ -180,7 +312,7 @@ button, input, textarea, select {
     transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 button {
-    cursor: pointer;
+    cursor: default;
     background-color: var(--button-bg);
     border: 1px solid var(--button-border);
     padding: 8px 15px;
@@ -199,6 +331,7 @@ textarea, input[type="text"], input[type="url"], input[type="number"] {
     padding: 8px 10px;
     border-radius: 5px;
     width: 100%;
+    cursor: default !important; /* Set cursor to default for text inputs */
 }
 textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="number"]:focus {
     outline: none;
@@ -229,7 +362,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     height: var(--icon-total-height-visual);
     padding: var(--icon-padding);
     text-align: center;
-    cursor: pointer; /* Changed from grab */
+    cursor: default !important; /* Changed to default, added !important */
     border-radius: 6px;
     transition: background-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
     display: flex;
@@ -243,7 +376,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     z-index: 10;
 }
 .desktop-icon.dragging {
-    cursor: grabbing;
+    cursor: default; /* Changed to default */
     opacity: 0.7;
     transform: scale(1.1);
     z-index: 15; /* Ensure dragging icon is above others */
@@ -268,7 +401,12 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
 .desktop-icon .icon-label {
     font-size: var(--icon-label-font-size);
     color: #fff;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    text-shadow: 
+        -1px -1px 0 #535353,  
+        1px -1px 0 #535353,
+        -1px 1px 0 #535353,
+        1px 1px 0 #535353,
+        0px 0px 5px rgba(60, 60, 60, 0.8); /* Keep a subtle blur for depth */
     word-break: break-word;
     width: 100%;
     line-height: var(--icon-label-line-height);
@@ -292,22 +430,35 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     border-top: 1px solid var(--taskbar-border);
     display: flex;
     align-items: center;
-    padding: 0 8px;
+    padding: 0 10px; /* Increased padding */
     z-index: 10000;
-    backdrop-filter: blur(12px) saturate(150%);
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    backdrop-filter: blur(15px) saturate(180%); /* Enhanced blur and saturation */
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
     box-shadow: 0 -2px 15px var(--shadow-color);
 }
 #start-button {
-    padding: 0 12px;
-    height: calc(var(--taskbar-height) - 12px);
-    font-size: 1.5rem;
-    border-radius: 5px;
-    margin-right: 10px;
+    padding: 0 15px; /* Increased padding */
+    height: calc(var(--taskbar-height) - 10px); /* Adjusted height */
+    font-size: 1.6rem; /* Slightly larger icon */
+    border-radius: 6px; /* Slightly more rounded */
+    margin-right: 12px; /* Increased margin */
     background-color: transparent;
-    border: 1px solid transparent; /* For consistent box model */
+    border: 1px solid transparent;
     color: var(--taskbar-text-color);
-    line-height: 1; /* Center icon vertically */
+    line-height: 1;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+    cursor: default; /* Set cursor to default */
+}
+#start-button:hover,
+#start-button:focus {
+    background-color: rgba(255, 255, 255, 0.15); /* Lighter hover for both themes */
+    border-color: rgba(255, 255, 255, 0.3);
+    outline: none;
+}
+#start-button.active {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
 }
 #running-apps {
     display: flex;
@@ -315,49 +466,56 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     flex-grow: 1;
     overflow-x: auto;
     scrollbar-width: thin; /* For Firefox */
+    margin: 0 5px; /* Added horizontal margin */
 }
 .taskbar-app-button {
-    padding: 0 12px;
-    margin: 6px 3px; /* Vertical margin to align with start button height */
+    padding: 0 10px; /* Adjusted padding */
+    margin: 5px 4px; /* Adjusted margins for better spacing */
     border: 1px solid transparent;
-    border-radius: 5px;
+    border-radius: 6px; /* Slightly more rounded */
     display: flex;
     align-items: center;
     justify-content: flex-start;
-    min-width: 60px; /* Ensure some visibility */
-    max-width: 180px; /* Prevent very long titles from taking too much space */
+    min-width: 50px; /* Slightly smaller min-width */
+    max-width: 160px; /* Slightly smaller max-width */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     background-color: transparent;
     color: var(--taskbar-text-color);
-    font-size: 0.85rem;
-    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+    font-size: 0.88rem; /* Slightly larger font size */
+    transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+    cursor: default; /* Set cursor to default */
 }
-.taskbar-app-button .app-icon { margin-right: 8px; font-size: 1rem; }
+.taskbar-app-button .app-icon { margin-right: 6px; font-size: 1.1rem; } /* Adjusted icon size and margin */
 .taskbar-app-button.active {
     background-color: var(--accent-color-light-transparent);
     border-bottom: 3px solid var(--accent-color);
     color: var(--accent-color);
-    font-weight: 500;
+    font-weight: 600; /* Bolder font for active */
+    box-shadow: inset 0 0 0 1px var(--accent-color-light-transparent); /* Subtle inner shadow */
 }
-.taskbar-app-button.minimized { opacity: 0.7; }
+.taskbar-app-button.minimized {
+    opacity: 0.6; /* More distinct minimized state */
+    filter: grayscale(30%); /* Subtle grayscale for minimized */
+}
 #system-tray {
     display: flex;
     align-items: center;
-    padding: 0 8px;
-    gap: 8px;
+    padding: 0 10px; /* Increased padding */
+    gap: 10px; /* Increased gap between icons */
     height: 100%;
     color: var(--taskbar-text-color);
 }
 .tray-icon {
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 3px;
+    font-size: 1.1rem; /* Slightly larger icons */
+    cursor: default; /* Set cursor to default */
+    padding: 5px; /* Increased padding */
+    border-radius: 4px; /* Slightly more rounded */
+    transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 .tray-icon:hover, .tray-icon:focus {
-    background-color: rgba(255,255,255,0.1); /* General hover, adjust for themes if needed */
+    background-color: rgba(255, 255, 255, 0.15); /* Lighter hover for both themes */
     outline: none;
 }
 .volume-popup {
@@ -373,15 +531,117 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     display: flex;
     align-items: center;
     gap: 8px;
+    opacity: 0; /* Start hidden for animation */
+    transform: translateY(10px); /* Start slightly below for slide-up effect */
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
-.volume-popup input[type="range"] { width: 100px; }
+
+.volume-popup.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.volume-popup.hide {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.volume-popup input[type="range"] {
+    width: 100px;
+    -webkit-appearance: none; /* Remove default WebKit styles */
+    appearance: none;
+    height: 8px; /* Height of the track */
+    background: var(--input-border); /* Track background */
+    border-radius: 4px;
+    outline: none;
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* Style for the thumb */
+.volume-popup input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px; /* Size of the thumb */
+    height: 20px; /* Size of the thumb */
+    background: var(--accent-color); /* Thumb color */
+    border-radius: 50%; /* Make it circular */
+    cursor: default; /* Changed to default */
+    margin-top: -6px; /* Center the thumb vertically on the track */
+    box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.3); /* Subtle shadow */
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.volume-popup input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    cursor: default; /* Changed to default */
+    box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.3);
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.volume-popup input[type="range"]::-webkit-slider-thumb:active {
+    cursor: default; /* Changed to default */
+    background: var(--accent-color-dark);
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.5);
+}
+
+.volume-popup input[type="range"]::-moz-range-thumb:active {
+    cursor: default; /* Changed to default */
+    background: var(--accent-color-dark);
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.5);
+}
+
+/* Style for the track fill (the part before the thumb) */
+.volume-popup input[type="range"]::-webkit-slider-runnable-track {
+    background: linear-gradient(to right, var(--accent-color) 0%, var(--accent-color) var(--value, 75%), var(--input-border) var(--value, 75%), var(--input-border) 100%);
+    border-radius: 4px;
+    height: 8px;
+}
+
+.volume-popup input[type="range"]::-moz-range-track {
+    background: var(--input-border);
+    border-radius: 4px;
+    height: 8px;
+}
+
+.volume-popup input[type="range"]::-moz-range-progress {
+    background: var(--accent-color);
+    border-radius: 4px;
+    height: 8px;
+}
+
 #clock {
-    padding: 0 12px;
-    font-size: 0.85rem;
+    padding: 0 10px; /* Adjusted padding */
+    font-size: 0.9rem; /* Slightly larger font size */
     color: var(--taskbar-text-color);
     text-align: right;
-    min-width: 60px; /* Ensure time is visible */
+    min-width: 65px; /* Ensure time is visible and has some breathing room */
 }
+.taskbar-app-button {
+    padding: 0 10px;
+    margin: 5px 4px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-width: 50px;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background-color: transparent;
+    color: var(--taskbar-text-color);
+    font-size: 0.88rem;
+    /* ADDED/MODIFIED: Transition for animation */
+    transition: background-color var(--transition-fast), 
+                border-color var(--transition-fast),
+                opacity 0.2s ease-out, /* For appearance/disappearance */
+                transform 0.2s ease-out; /* For appearance/disappearance */
+}
+
 
 /* ~~~~~~~~~~ Start Menu ~~~~~~~~~~ */
 #start-menu {
@@ -431,7 +691,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
 }
 #start-menu-apps li {
     padding: 10px 20px;
-    cursor: pointer;
+    cursor: default; /* Changed to default */
     display: flex;
     align-items: center;
     font-size: 0.95rem;
@@ -496,7 +756,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     display: flex;
     align-items: center;
     padding: 0 5px 0 12px;
-    cursor: grab;
+    cursor: default; /* Changed to default */
     user-select: none; /* Prevent text selection in title bar */
     -webkit-user-select: none;
     border-top-left-radius: var(--window-border-radius); /* Match window */
@@ -507,7 +767,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     -webkit-backdrop-filter: blur(10px) saturate(120%);
 }
 .app-window.active .title-bar { background-color: var(--window-title-bar-active-bg); }
-.title-bar:active { cursor: grabbing; } /* Feedback during drag */
+.title-bar:active { cursor: default; } /* Feedback during drag */
 .title-bar .app-icon { margin-right: 8px; font-size: 1.1em; }
 .title-bar .title {
     flex-grow: 1;
@@ -658,7 +918,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     text-align: center;
     padding: 10px;
     border-radius: 6px;
-    cursor: pointer;
+    cursor: default; /* Changed to default */
     transition: background-color var(--transition-fast);
     outline: none; /* For programmatic focus, visual handled by :focus */
 }
@@ -777,6 +1037,93 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
 }
 .image-viewer-canvas .message { color: var(--text-color); opacity: 0.7; }
 
+/* App Importer */
+.app-importer-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    background-color: var(--window-bg); /* Use window background for consistency */
+    border-radius: var(--window-border-radius);
+    color: var(--text-color);
+    height: 100%; /* Ensure it fills the content area */
+    box-sizing: border-box; /* Include padding in height */
+}
+
+.app-importer-container h2 {
+    font-size: 1.8rem;
+    color: var(--accent-color);
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.app-importer-container .form-group {
+    margin-bottom: 10px;
+}
+
+.app-importer-container label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.app-importer-container input[type="text"],
+.app-importer-container input[type="file"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--input-border);
+    border-radius: 8px; /* More rounded corners */
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-size: 1rem;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.app-importer-container input[type="text"]:focus,
+.app-importer-container input[type="file"]:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px var(--accent-color-light-transparent);
+}
+
+.app-importer-container .help-text {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin-top: 5px;
+    line-height: 1.4;
+}
+
+.app-importer-container #createAppBtn {
+    width: 100%;
+    padding: 12px 20px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px; /* More rounded corners */
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: default; /* Changed to default */
+    margin-top: 15px;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 4px 10px rgba(0, 120, 212, 0.3);
+}
+
+.app-importer-container #createAppBtn:hover {
+    background-color: var(--accent-color-light);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 15px rgba(0, 120, 212, 0.4);
+}
+
+.app-importer-container #createAppBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0, 120, 212, 0.2);
+}
+
 /* Properties Dialog */
 .properties-dialog-content { padding: 10px; font-size: 0.9rem; }
 .properties-dialog-content p { margin-bottom: 8px; }
@@ -849,7 +1196,7 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
 #context-menu ul { list-style: none; }
 #context-menu li {
     padding: 10px 18px;
-    cursor: pointer;
+    cursor: default; /* Changed to default */
     font-size: 0.9rem;
     color: var(--text-color);
     transition: background-color var(--transition-fast), color var(--transition-fast);
@@ -869,6 +1216,167 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     margin: 4px 0; /* Tighter margin for separators */
 }
 
+/* ~~~~~~~~~~ Notification Toasts ~~~~~~~~~~ */
+#notification-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 10002; /* Above everything else */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end; /* Stack from top-right */
+    pointer-events: none; /* Allow clicks to pass through container */
+}
+
+.notification-toast {
+    background-color: var(--window-bg);
+    border: 1px solid var(--window-border);
+    border-radius: var(--window-border-radius);
+    box-shadow: 0 4px 15px var(--shadow-color);
+    padding: 12px 15px;
+    min-width: 280px;
+    max-width: 350px;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    overflow: hidden;
+    pointer-events: auto; /* Re-enable clicks on the toast itself */
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+
+.notification-toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification-toast.hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+.notification-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--window-title-bar-text); /* Use a strong text color */
+}
+
+.notification-icon {
+    font-size: 1.2em;
+    margin-right: 8px;
+    line-height: 1;
+}
+
+.notification-title {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.notification-dismiss {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0 5px;
+    cursor: default; /* Changed to default */
+    color: var(--text-color);
+    opacity: 0.7;
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.notification-dismiss:hover {
+    opacity: 1;
+    color: var(--accent-color);
+}
+
+.notification-body {
+    line-height: 1.4;
+    color: var(--text-color);
+    opacity: 0.9;
+}
+
+/* Notification Types */
+.notification-toast.info .notification-icon { color: var(--accent-color); }
+.notification-toast.success .notification-icon { color: #28a745; } /* Green */
+.notification-toast.warning .notification-icon { color: #ffc107; } /* Yellow/Orange */
+    .notification-toast.error .notification-icon { color: #dc3545; } /* Red */
+
+/* ~~~~~~~~~~ Custom Cursor ~~~~~~~~~~ */
+/* Hide default cursor */
+body {
+    cursor: none !important;
+}
+
+/* Custom cursor element */
+#custom-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none; /* Allow clicks to pass through */
+    z-index: 99999; /* Ensure it's always on top */
+    transition: transform var(--cursor-transition-duration) ease-out;
+}
+
+#custom-cursor .cursor-outer {
+    width: var(--cursor-size);
+    height: var(--cursor-size);
+    border: var(--cursor-border-width) solid var(--cursor-color);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: width var(--cursor-transition-duration) ease-out,
+                height var(--cursor-transition-duration) ease-out,
+                border-color var(--cursor-transition-duration) ease-out,
+                opacity var(--cursor-transition-duration) ease-out,
+                box-shadow var(--cursor-transition-duration) ease-out; /* Added box-shadow to transition */
+    box-shadow: 0 0 5px var(--cursor-outline-color); /* Subtle glow */
+}
+
+#custom-cursor .cursor-dot {
+    width: var(--cursor-dot-size);
+    height: var(--cursor-dot-size);
+    background-color: var(--cursor-color);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: background-color var(--cursor-transition-duration) ease-out,
+                opacity var(--cursor-transition-duration) ease-out;
+}
+
+/* Cursor states */
+body.cursor-hover #custom-cursor .cursor-outer {
+    width: calc(var(--cursor-size) * 1.2);
+    height: calc(var(--cursor-size) * 1.2);
+    opacity: 0.7;
+}
+
+body.cursor-text #custom-cursor .cursor-outer {
+    opacity: 0; /* Hide outer circle for text cursor */
+}
+body.cursor-text #custom-cursor .cursor-dot {
+    width: 2px; /* Thin vertical line */
+    height: var(--cursor-size);
+    border-radius: 0;
+    background-color: var(--cursor-color);
+}
+
+/* Resize cursors - we'll use default browser ones for these, but ensure color consistency */
+.resize-handle.n, .resize-handle.s { cursor: ns-resize; }
+.resize-handle.e, .resize-handle.w { cursor: ew-resize; }
+.resize-handle.ne, .resize-handle.nw { cursor: nesw-resize; }
+.resize-handle.se, .resize-handle.sw { cursor: nwse-resize; }
+
 /* ~~~~~~~~~~ Utility Classes ~~~~~~~~~~ */
 .hidden { display: none !important; }
 
@@ -881,4 +1389,149 @@ textarea:focus, input[type="text"]:focus, input[type="url"]:focus, input[type="n
     z-index: 9998; /* Below Start Menu/Context Menu but above windows */
     pointer-events: none;
     transition: all 0.1s ease-out; /* Smooth transitions for position/size */
+}
+
+/* ~~~~~~~~~~ Responsive Adjustments ~~~~~~~~~~ */
+@media (max-width: 768px) {
+    :root {
+        --taskbar-height-val: 50; /* Slightly taller taskbar for touch */
+        --icon-size: 64px; /* Slightly smaller icons */
+        --icon-image-size: calc(var(--icon-size) * 0.5);
+        --icon-label-font-size: 11px;
+        --icon-padding: 4px;
+        --icon-margin: 8px;
+        --control-button-size: 36px; /* Larger control buttons for touch */
+    }
+
+    body {
+        font-size: 14px; /* Base font size adjustment */
+    }
+
+    /* Taskbar adjustments */
+    #taskbar {
+        padding: 0 5px;
+        height: var(--taskbar-height);
+    }
+    #start-button {
+        padding: 0 10px;
+        height: calc(var(--taskbar-height) - 8px);
+        font-size: 1.4rem;
+        margin-right: 8px;
+    }
+    #running-apps {
+        margin: 0 2px;
+    }
+    .taskbar-app-button {
+        padding: 0 8px;
+        margin: 4px 3px;
+        min-width: 40px;
+        max-width: 120px;
+        font-size: 0.8rem;
+    }
+    .taskbar-app-button .app-icon { margin-right: 4px; font-size: 1rem; }
+    #system-tray {
+        padding: 0 5px;
+        gap: 8px;
+    }
+    .tray-icon {
+        font-size: 1rem;
+        padding: 4px;
+    }
+    #clock {
+        padding: 0 5px;
+        font-size: 0.8rem;
+        min-width: 60px;
+    }
+
+    /* Start Menu adjustments */
+    #start-menu {
+        left: 0;
+        right: 0;
+        width: auto; /* Allow it to take full width */
+        max-width: 95%; /* Max width to prevent it from touching edges on very wide phones */
+        margin: 0 auto; /* Center it */
+        border-radius: var(--window-border-radius) var(--window-border-radius) 0 0; /* Only top corners rounded */
+        max-height: 80vh; /* Limit height to 80% of viewport height */
+    }
+    #start-menu-search input {
+        padding: 10px;
+        font-size: 1rem;
+    }
+    #start-menu-apps li {
+        padding: 12px 15px;
+        font-size: 1rem;
+    }
+    #start-menu-apps li .app-icon {
+        margin-right: 10px;
+        font-size: 1.4em;
+    }
+
+    /* Window adjustments for smaller screens */
+    .app-window {
+        min-width: 90vw; /* Windows take up more screen space */
+        min-height: 70vh;
+        width: 90vw !important; /* Override JS calculated width */
+        height: 70vh !important; /* Override JS calculated height */
+        left: 5vw !important; /* Center horizontally */
+        top: calc(50vh - (70vh / 2)) !important; /* Center vertically */
+        border-radius: 0; /* Full screen feel, no rounded corners */
+        box-shadow: none; /* No shadow for full screen */
+    }
+    .app-window.maximized {
+        border-radius: 0; /* Ensure no border radius when maximized */
+    }
+    .title-bar {
+        height: var(--control-button-size); /* Use adjusted control button size */
+        padding: 0 8px 0 15px;
+    }
+    .window-controls button {
+        width: var(--control-button-size);
+    }
+    .window-content {
+        padding: 10px;
+    }
+
+    /* Specific app adjustments */
+    .notepad-textarea {
+        font-size: 1rem;
+    }
+    .fe-item-grid {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Smaller grid items */
+        gap: 10px;
+        padding: 10px;
+    }
+    .fe-item .icon { font-size: 2rem; }
+    .fe-item .name { font-size: 0.75rem; }
+    .calculator-app-content button {
+        font-size: 1rem;
+    }
+    .calc-display {
+        font-size: 1.5rem;
+    }
+    .web-browser-controls input[type="url"] {
+        font-size: 0.8rem;
+    }
+    .web-browser-controls button {
+        font-size: 0.8rem;
+        min-width: 25px;
+    }
+
+    /* Context Menu */
+    #context-menu {
+        min-width: 180px;
+        padding: 4px 0;
+    }
+    #context-menu li {
+        padding: 8px 15px;
+        font-size: 0.85rem;
+    }
+    #context-menu li .icon { margin-right: 8px; }
+
+    /* Notifications */
+    .notification-toast {
+        min-width: 250px;
+        max-width: 90vw;
+        padding: 10px 12px;
+        font-size: 0.85rem;
+    }
 }

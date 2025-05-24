@@ -12,19 +12,18 @@ const CalculatorAppMethods = {
             case '-': result = prevNum - currentNum; break;
             case '*': result = prevNum * currentNum; break;
             case '/': result = currentNum === 0 ? 'Error' : prevNum / currentNum; break;
-            default: return parseFloat(current) || 0; // Should not happen
+            default: return parseFloat(current) || 0;
         }
         if (result === 'Error') return 'Error';
-        return parseFloat(result.toPrecision(12)); // Limit precision to avoid floating point issues
+        return parseFloat(result.toPrecision(12)); 
     }
 };
 
 export const calculatorAppConfig = {
     name:'Calculator', icon:'🧮', width:320, height:450, allowMultiple:true,
     launch: (windowId, contentArea) => {
-        if(!contentArea) return;
+        if(!contentArea) return null;
         contentArea.classList.add('calculator-app-content');
-        // contentArea.id = `calculator-content-${windowId}`; // This ID can be removed if not used by JS directly
 
         const displayId = `calc-display-${windowId}`;
         contentArea.innerHTML = `
@@ -43,56 +42,56 @@ export const calculatorAppConfig = {
             <button data-val=".">.</button>`;
 
         const display = contentArea.querySelector(`#${displayId}`);
-        if (!display) { console.error(`Calculator: Display element not found for ${windowId}`); return; }
+        if (!display) { console.error(`Calculator: Display element not found for ${windowId}`); return null; }
 
         let currentInput = '0';
         let previousInput = '';
         let operator = null;
-        let waitingForOperand = false; // True after an operator is pressed, waiting for next number
+        let waitingForOperand = false;
 
         contentArea.querySelectorAll('button').forEach(button => {
             button.addEventListener('click', () => {
                 SoundPlayer.playSound('click');
                 const value = button.dataset.val;
 
-                if (!isNaN(parseFloat(value))) { // Number
-                    if (currentInput === 'Error' || waitingForOperand || currentInput === '0') { // Added currentInput === 'Error'
+                if (!isNaN(parseFloat(value))) {
+                    if (currentInput === 'Error' || waitingForOperand || currentInput === '0') {
                         currentInput = value;
                         waitingForOperand = false;
                     } else {
                         currentInput += value;
                     }
-                } else if (value === '.') { // Decimal
+                } else if (value === '.') {
                     if (waitingForOperand) {
                         currentInput = '0.';
                         waitingForOperand = false;
                     } else if (!currentInput.includes('.')) {
                         currentInput += '.';
                     }
-                } else if (value === 'C') { // Clear
+                } else if (value === 'C') {
                     currentInput = '0';
                     previousInput = '';
                     operator = null;
                     waitingForOperand = false;
-                } else if (value === '←') { // Backspace
+                } else if (value === '←') {
                     currentInput = currentInput.slice(0, -1) || '0';
-                    if (waitingForOperand && currentInput === '0') waitingForOperand = false; // Allow re-entry after backspacing operator result
-                } else if (['+', '-', '*', '/'].includes(value)) { // Operator
-                    if (operator && !waitingForOperand && previousInput) { // Chain operations: 1+2+ -> 3+
+                    if (waitingForOperand && currentInput === '0') waitingForOperand = false;
+                } else if (['+', '-', '*', '/'].includes(value)) {
+                    if (operator && !waitingForOperand && previousInput) {
                         currentInput = CalculatorAppMethods.calculate(currentInput, previousInput, operator).toString();
                     }
                     previousInput = currentInput;
                     operator = value;
                     waitingForOperand = true;
-                } else if (value === '=') { // Equals
+                } else if (value === '=') {
                     if (operator && previousInput) {
                         currentInput = CalculatorAppMethods.calculate(currentInput, previousInput, operator).toString();
-                        previousInput = ''; // Reset for next calculation
+                        previousInput = '';
                         operator = null;
-                        waitingForOperand = true; // Result can be start of new calculation or overwritten
+                        waitingForOperand = true;
                     }
                 }
-                // Truncate or use scientific notation for display if too long
+                
                 let displayText = currentInput;
                 if (displayText.length > 12 && displayText !== "Error") {
                     try { displayText = parseFloat(displayText).toExponential(6); } catch(e) { /* ignore */ }
@@ -100,5 +99,6 @@ export const calculatorAppConfig = {
                 display.textContent = displayText;
             });
         });
+        return {}; // Return a dummy appInstance
     }
 };

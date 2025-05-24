@@ -37,8 +37,13 @@ export const state = {
     lastStoredDesktopWidth: 0, // Used to invalidate icon positions if desktop width changes
     iconGridCellSize: { width: 0, height: 0 }, // Calculated size of each grid cell for icons
     isVolumePopupOpen: false,
+    masterVolume: 75,          // Initial master volume level (0-100)
     iconsPerRow: 0,            // Calculated number of icons per row on the desktop
     fileSystemReady: false,    // Flag indicating if IndexedDB is initialized
+    clipboard: {
+        type: null, // 'copy' or 'cut'
+        items: []   // Array of { path: string, type: 'file' | 'folder' }
+    },
 };
 
 // Attempt to load theme and icon positions from localStorage
@@ -51,11 +56,18 @@ export function loadInitialStateFromLocalStorage() {
     } catch (e) { console.warn("Error reading theme from localStorage:", e); }
 
     try {
+        const storedVolume = localStorage.getItem('master-volume');
+        if (storedVolume !== null) {
+            state.masterVolume = parseInt(storedVolume, 10);
+        }
+    } catch (e) { console.warn("Error reading master volume from localStorage:", e); }
+
+    try {
         const storedIconData = localStorage.getItem('desktop-icon-positions-v2'); // v2 for new structure
         if (storedIconData) {
             const parsedData = JSON.parse(storedIconData);
             state.iconPositions = parsedData.positions || {};
-            state.lastStoredDesktopWidth = parsedData.desktopWidth || 0;
+            state.lastStoredDesktopWidth = parsedData.desktopDataWidth || 0; // Corrected property name
         }
     } catch (e) { console.warn("Error reading icon positions from localStorage:", e); }
 }

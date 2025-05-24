@@ -8,8 +8,9 @@ import { Taskbar } from './managers/taskbar.js';
 import { StartMenu } from './managers/startMenu.js';
 import { ContextMenu } from './managers/contextMenu.js';
 import { WindowManager } from './managers/windowManager.js';
-// AppRegistry is not directly used in main.js for init, but other modules depend on it being available.
-// Its definition (which imports app configs) ensures apps are "known".
+import { NotificationManager } from './managers/notificationManager.js'; // Import NotificationManager
+import { AppRegistry } from './apps/appRegistry.js'; // Ensure AppRegistry is imported for dynamic app loading
+import { showInAppAlert } from './core/utils.js'; // Import showInAppAlert
 
 // ~~~~~~~~~~~~~~~~~~ DOM Element References (Initialized in DOMContentLoaded) ~~~~~~~~~~~~~~~~~~
 export const domElements = {
@@ -38,44 +39,45 @@ function initializeDOMReferences() {
     domElements.startMenuSearchInput = document.querySelector('#start-menu-search input');
     domElements.contextMenuElement = document.getElementById('context-menu');
     domElements.snapPreviewElement = document.getElementById('snap-preview');
+    domElements.customCursor = document.getElementById('custom-cursor');
 }
 
 
 // ~~~~~~~~~~~~~~~~~~ Initialization (DOMContentLoaded) ~~~~~~~~~~~~~~~~~~
 document.addEventListener('DOMContentLoaded', async () => {
-    // console.log("DOM fully loaded and parsed."); // Dev Log
-
     initializeDOMReferences();
     loadInitialStateFromLocalStorage(); // Load theme & icon positions
+    initializeCustomCursor(); // Initialize custom cursor logic
 
     // Initialize CONSTANTS that depend on CSS
     try {
         CONSTANTS.TASKBAR_HEIGHT = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--taskbar-height-val')) || 44;
     } catch(e) {
         console.warn("Failed to read --taskbar-height-val from CSS, using default.", e);
-        // CONSTANTS.TASKBAR_HEIGHT is already defaulted in constants.js
     }
-
 
     try {
         ThemeManager.applyTheme(state.currentTheme); // Apply theme early
         SoundPlayer.init();
 
-        // console.log("DOMContentLoaded: Awaiting FileSystemManager.init()..."); // Dev log
         await FileSystemManager.init();
-        // console.log("DOMContentLoaded: FileSystemManager.init() complete. FS Ready:", state.fileSystemReady); // Dev log
 
         if (!state.fileSystemReady) {
             throw new Error("File System Manager failed to initialize. Desktop cannot load fully.");
         }
 
+        // Load dynamically created user apps from file system
+        await loadUserApps();
+        // The alert for imported apps is now handled by AppRegistry.registerDynamicApp
+        // and should only show when an app is newly imported, not on every page load.
+
         // Initialize UI Managers - Order can be important
-        // DesktopManager needs FSM and its own init for icon grid calculations
         await DesktopManager.init(); // This now uses rAF for renderIcons
         Taskbar.init();
         StartMenu.init();
         ContextMenu.init();
         WindowManager.init(); // Init WindowManager after other UI elements are somewhat ready
+        NotificationManager.init(); // Initialize NotificationManager
 
         // Global click listener to hide menus or clear active states (moved from DesktopManager)
         document.addEventListener('click', (e) => {
@@ -93,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, true); // Use capture phase
 
 
-        console.log("Web Desktop Environment 5.0.2 Initialized successfully.");
+        console.log("Web Desktop Environment 0.01 Initialized successfully.");
 
     } catch (error) {
         console.error("FATAL ERROR during initialization:", error);
@@ -108,11 +110,145 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+/** Loads user-created apps from the virtual file system and registers them. */
+async function loadUserApps() {
+    if (!state.fileSystemReady) {
+        console.warn("main.js: File system not ready, cannot load user apps.");
+        return;
+    }
+    try {
+        const userAppDirs = await FileSystemManager.listDirectory('/user_apps/');
+        for (const appDir of userAppDirs) {
+            if (appDir.type === 'folder') {
+                const configPath = `${appDir.path}config.json`;
+                const htmlPath = `${appDir.path}index.html`;
+                const iconPath = `${appDir.path}icon.png`; // Assuming png for now, could be dynamic
+
+                const appConfigItem = await FileSystemManager.getItem(configPath);
+                const htmlContentItem = await FileSystemManager.getItem(htmlPath);
+                const iconItem = await FileSystemManager.getItem(iconPath).catch(() => null); // Icon is optional
+
+                if (appConfigItem && htmlContentItem) {
+                    const appConfig = JSON.parse(appConfigItem.content);
+                    const htmlContent = htmlContentItem.content;
+                    const iconDataUrl = iconItem ? iconItem.content : appConfig.icon; // Use stored icon or config icon
+
+                    // Re-create the launch function as it's not serializable in JSON
+                    appConfig.launch = (windowId, contentArea) => {
+                        contentArea.innerHTML = `<iframe srcdoc="${escapeHtml(htmlContent)}" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" style="width:100%; height:100%; border:none;"></iframe>`;
+                        return {}; // Return an empty object as the app instance
+                    };
+                    // Ensure the icon is correctly set if it was a data URL
+                    appConfig.icon = iconDataUrl;
+
+                    AppRegistry.registerDynamicApp(appConfig.appId, appConfig, htmlContent, iconDataUrl);
+                } else {
+                    console.warn(`main.js: Incomplete user app found in ${appDir.path}. Skipping.`);
+                }
+            }
+        }
+        console.log("main.js: User apps loaded and registered.");
+    } catch (error) {
+        console.error("main.js: Error loading user apps:", error);
+    }
+}
+
+// Helper function to escape HTML for srcdoc (copied from appImporter.js)
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&")
+        .replace(/</g, "<")
+        .replace(/>/g, ">")
+        .replace(/"/g, "") // Corrected as per user instruction
+        .replace(/'/g, "&#039;");
+}
+
+
 // Global event listeners for specific behaviors
-document.addEventListener('contextmenu', event => event.preventDefault()); // Prevent default browser context menu
+document.addEventListener('contextmenu', event => {
+    // Check if the right-click was on a text input element
+    const target = event.target;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        event.preventDefault(); // Prevent default browser context menu
+        // Ensure the element has an ID, assign one if not (though most should have one)
+        if (!target.id) {
+            target.id = `auto-generated-input-id-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        ContextMenu.showForTextInput(event, target.id);
+    } else {
+        event.preventDefault(); // Prevent default browser context menu for other elements
+    }
+});
 
 // Clear long press timer on touch end/cancel/move to prevent false positives
 const clearLongPress = () => clearTimeout(state.longPressTimer);
 document.addEventListener('touchmove', clearLongPress, { passive: true });
 document.addEventListener('touchend', clearLongPress, { passive: true });
 document.addEventListener('touchcancel', clearLongPress, { passive: true });
+
+/**
+ * Initializes the custom cursor functionality.
+ * Attaches event listeners to track mouse movement and update cursor appearance.
+ */
+function initializeCustomCursor() {
+    const cursor = domElements.customCursor;
+    if (!cursor) {
+        console.warn("Custom cursor element not found. Custom cursor will not be active.");
+        return;
+    }
+
+    let rAF;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    function updateCursorPosition() {
+        cursor.style.transform = `translate(${mouseX}px, ${mouseY}px)`;
+        rAF = requestAnimationFrame(updateCursorPosition);
+    }
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        if (!rAF) {
+            rAF = requestAnimationFrame(updateCursorPosition);
+        }
+    });
+
+    document.addEventListener('mouseleave', () => {
+        cursor.style.opacity = '0';
+        if (rAF) {
+            cancelAnimationFrame(rAF);
+            rAF = null;
+        }
+    });
+
+    document.addEventListener('mouseenter', () => {
+        cursor.style.opacity = '1';
+        if (!rAF) {
+            rAF = requestAnimationFrame(updateCursorPosition);
+        }
+    });
+
+    // Handle cursor states for different elements
+    document.addEventListener('mouseover', (e) => {
+        const target = e.target;
+        if (target.closest('a, button, .desktop-icon, .taskbar-app-button, .tray-icon, .start-menu-apps li, .window-controls button, .dialog-button')) {
+            document.body.classList.add('cursor-hover');
+        } else if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+            document.body.classList.add('cursor-text');
+        } else {
+            document.body.classList.remove('cursor-hover', 'cursor-text');
+        }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+        const target = e.target;
+        if (!e.relatedTarget || !e.relatedTarget.closest('a, button, .desktop-icon, .taskbar-app-button, .tray-icon, .start-menu-apps li, .window-controls button, .dialog-button')) {
+            document.body.classList.remove('cursor-hover');
+        }
+        if (!e.relatedTarget || (e.relatedTarget.tagName !== 'INPUT' && e.relatedTarget.tagName !== 'TEXTAREA')) {
+            document.body.classList.remove('cursor-text');
+        }
+    });
+
+}

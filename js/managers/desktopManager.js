@@ -1,6 +1,6 @@
 import { CONSTANTS } from '../core/constants.js';
 import { state } from '../core/state.js';
-import { getEventCoordinates, getIconForFileType } from '../core/utils.js';
+import { getEventCoordinates, getIconForFileType, getFileExtension } from '../core/utils.js';
 import { DESKTOP_ICONS_CONFIG } from '../core/uiConfigs.js';
 import { FileSystemManager } from '../core/fileSystemManager.js';
 import { SoundPlayer } from '../core/soundPlayer.js';
@@ -8,6 +8,7 @@ import { AppRegistry } from '../apps/appRegistry.js';
 import { ContextMenu } from './contextMenu.js';
 import { StartMenu } from './startMenu.js';
 import { domElements } from '../main.js'; // Shared DOM elements
+import { showInAppAlert, showInAppConfirm } from '../core/utils.js';
 
 export const DesktopManager = {
     /** Initializes desktop, icons, and event listeners. */
@@ -17,6 +18,9 @@ export const DesktopManager = {
             console.error("FATAL: Desktop element not found!");
             return;
         }
+
+        // Load icon positions from localStorage first
+        DesktopManager._loadIconPositions();
 
         // Calculate icon grid cell size after CSS is applied
         requestAnimationFrame(async () => {
@@ -32,9 +36,10 @@ export const DesktopManager = {
             // console.log("DM: iconGridCellSize calculated:", state.iconGridCellSize); // Dev log
 
             // Invalidate stored positions if desktop width has changed significantly
+            // Only reset if the width has changed, otherwise keep loaded positions
             if (Math.abs(state.lastStoredDesktopWidth - domElements.desktopElement.clientWidth) > 50) { // 50px tolerance
                 // console.log("DM: Desktop width changed, invalidating stored icon positions."); // Dev log
-                state.iconPositions = {};
+                state.iconPositions = {}; // Reset positions for re-layout
             }
 
             await DesktopManager.renderIcons();
@@ -67,27 +72,25 @@ export const DesktopManager = {
         const availableWidth = domElements.desktopElement.clientWidth - (CONSTANTS.DESKTOP_PADDING * 2);
 
         state.iconsPerRow = Math.max(1, Math.floor(availableWidth / iconCellWidth));
-        // console.log(`DM.renderIcons: Desktop clientWidth: ${domElements.desktopElement.clientWidth}, Available: ${availableWidth}, Icons per row: ${state.iconsPerRow}`); // Dev Log
 
-        let currentX = CONSTANTS.DESKTOP_PADDING;
-        let currentY = CONSTANTS.DESKTOP_PADDING;
-        let iconCountInRow = 0;
-        let iconDomElements = [];
+        let iconDomElements = []; // This will hold { el, id, type, name, path, calculatedX, calculatedY }
+        let occupiedPositions = {}; // To keep track of positions already assigned in this render cycle
 
-        // Add app icons from config
-        DESKTOP_ICONS_CONFIG.forEach((iconConfig) => {
-            const iconEl = DesktopManager._createIconElement(iconConfig.id, iconConfig.name, iconConfig.icon, {
-                'data-app-id': iconConfig.appId,
+        // 1. Collect all registered app icons
+        for (const appId in AppRegistry.apps) {
+            const appConfig = AppRegistry.apps[appId];
+            if (appId === 'errorApp' || appId === 'propertiesDialog') continue;
+            const iconEl = DesktopManager._createIconElement(appId, appConfig.name, appConfig.icon, {
+                'data-app-id': appId,
                 'data-icon-type': 'app',
-                'data-item-name': iconConfig.name // For context menu consistency
+                'data-item-name': appConfig.name
             });
-            iconDomElements.push({ el: iconEl, id: iconConfig.id, type: 'app', name: iconConfig.name });
-        });
+            iconDomElements.push({ el: iconEl, id: appId, type: 'app', name: appConfig.name });
+        }
 
-        // Add file/folder icons from /Desktop/ in FSM
+        // 2. Collect all file/folder icons from /Desktop/
         try {
             const desktopItems = await FileSystemManager.listDirectory('/Desktop/');
-            // console.log("DM: Fetched desktop items from FSM:", desktopItems); // Dev Log
             desktopItems.forEach(item => {
                 const iconGlyph = item.type === 'folder' ? '📁' : getIconForFileType(item.name);
                 const fileIconId = `desktop-file-${item.path.replace(/[\/\s.]/g, '_')}`;
@@ -102,38 +105,80 @@ export const DesktopManager = {
             console.error("DM: Error rendering desktop file icons:", error);
         }
 
-        // Sort icons: apps first, then by name
+        // 3. Sort icons based on user's requested priority and then alphabetically
         iconDomElements.sort((a, b) => {
+            const customOrder = ['about', 'fileExplorer', 'recycleBin'];
+
+            const aIndex = customOrder.indexOf(a.id);
+            const bIndex = customOrder.indexOf(b.id);
+
+            // If both are in custom order, sort by their custom index
+            if (aIndex !== -1 && bIndex !== -1) {
+                return aIndex - bIndex;
+            }
+            // If only 'a' is in custom order, 'a' comes first
+            if (aIndex !== -1) {
+                return -1;
+            }
+            // If only 'b' is in custom order, 'b' comes first
+            if (bIndex !== -1) {
+                return 1;
+            }
+
+            // For apps not in custom order, sort apps before files/folders
             if (a.type === 'app' && b.type !== 'app') return -1;
             if (a.type !== 'app' && b.type === 'app') return 1;
+
+            // For items of the same type (or both not custom-ordered apps), sort alphabetically
             return a.name.localeCompare(b.name);
         });
 
-        // Position and append icons
-        iconDomElements.forEach(iconData => {
-            const iconEl = iconData.el;
+        // 4. Calculate positions for all icons
+        let currentAutoLayoutCol = 0;
+        let currentAutoLayoutRow = 0;
+
+        for (const iconData of iconDomElements) {
             const iconId = iconData.id;
+            let finalX, finalY;
 
-            if (state.iconPositions[iconId]) { // Use stored position if available and valid (validity checked by desktopWidth match)
-                iconEl.style.left = `${state.iconPositions[iconId].x}px`;
-                iconEl.style.top = `${state.iconPositions[iconId].y}px`;
-            } else { // Auto-layout
-                if (iconCountInRow >= state.iconsPerRow && state.iconsPerRow > 0) {
-                    currentX = CONSTANTS.DESKTOP_PADDING;
-                    currentY += iconCellHeight;
-                    iconCountInRow = 0;
+            if (state.iconPositions[iconId]) { // Use stored position if available
+                finalX = state.iconPositions[iconId].x;
+                finalY = state.iconPositions[iconId].y;
+            } else { // Find a new position for this icon
+                // Start search from the current auto-layout position
+                let targetX = currentAutoLayoutCol * iconCellWidth + CONSTANTS.DESKTOP_PADDING;
+                let targetY = currentAutoLayoutRow * iconCellHeight + CONSTANTS.DESKTOP_PADDING;
+
+                // Find the next available grid position, considering already occupied slots in this render cycle
+                const availablePos = DesktopManager._findNextAvailableGridPosition(targetX, targetY, iconId, occupiedPositions);
+                finalX = availablePos.x;
+                finalY = availablePos.y;
+
+                // Update auto-layout cursor for the next icon
+                currentAutoLayoutCol = Math.round((finalX - CONSTANTS.DESKTOP_PADDING) / iconCellWidth);
+                currentAutoLayoutRow = Math.round((finalY - CONSTANTS.DESKTOP_PADDING) / iconCellHeight);
+
+                currentAutoLayoutCol++;
+                if (currentAutoLayoutCol >= state.iconsPerRow) {
+                    currentAutoLayoutCol = 0;
+                    currentAutoLayoutRow++;
                 }
-                iconEl.style.left = `${currentX}px`;
-                iconEl.style.top = `${currentY}px`;
-                state.iconPositions[iconId] = { x: currentX, y: currentY }; // Store auto-layout position
-
-                currentX += iconCellWidth;
-                iconCountInRow++;
             }
-            domElements.desktopElement.appendChild(iconEl);
+
+            iconData.calculatedX = finalX;
+            iconData.calculatedY = finalY;
+            occupiedPositions[`${finalX},${finalY}`] = true; // Mark this position as occupied for current render
+            state.iconPositions[iconId] = { x: finalX, y: finalY }; // Update global state for persistence
+        }
+
+        // 5. Append icons to DOM with their calculated positions
+        iconDomElements.forEach(iconData => {
+            iconData.el.style.left = `${iconData.calculatedX}px`;
+            iconData.el.style.top = `${iconData.calculatedY}px`;
+            domElements.desktopElement.appendChild(iconData.el);
         });
-        DesktopManager.saveIconPositions(); // Save potentially updated auto-layout positions
-        // console.log("DM: Icons rendered and positioned."); // Dev Log
+
+        DesktopManager.saveIconPositions();
     },
 
     /** Creates a desktop icon DOM element. */
@@ -145,7 +190,7 @@ export const DesktopManager = {
         iconElement.setAttribute('tabindex', '0'); // For keyboard accessibility
         iconElement.innerHTML = `
             <span class="icon-image">${iconGlyph}</span>
-            <span class="icon-label">${name}</span>`;
+            <span class="icon-label" id="${id}-label">${name}</span>`;
 
         for (const attr in dataAttributes) {
             iconElement.setAttribute(attr, dataAttributes[attr]);
@@ -158,12 +203,15 @@ export const DesktopManager = {
                 DesktopManager._handleIconOpen(iconElement);
             }
         });
-        iconElement.ondragstart = () => false; // Prevent native browser drag
+        // Add drag and drop listeners
+        iconElement.addEventListener('dragstart', DesktopManager.handleDragStart);
+        iconElement.addEventListener('dragover', DesktopManager.handleDragOver);
+        iconElement.addEventListener('drop', DesktopManager.handleDrop);
         return iconElement;
     },
 
     /** Handles opening an icon (launch app or file). */
-    _handleIconOpen: (iconEl) => {
+    _handleIconOpen: async (iconEl) => {
         const iconType = iconEl.dataset.iconType;
         const appId = iconEl.dataset.appId;
         const filePath = iconEl.dataset.filePath;
@@ -171,18 +219,18 @@ export const DesktopManager = {
         if (iconType === 'app' && appId) {
             AppRegistry.launchApp(appId);
         } else if ((iconType === 'file' || iconType === 'folder') && filePath) {
-            if (iconType === 'file' && getIconForFileType(filePath) === '📝') { // Use getIconForFileType to check type based on extension
-                AppRegistry.launchApp('notepad', { filePath: filePath });
-            } else if (iconType === 'folder') {
+            const fileExtension = getFileExtension(filePath);
+            const textFileExtensions = ['txt', 'js', 'css', 'html', 'json', 'md', 'xml', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb', 'sh', 'sql', 'yaml', 'yml', 'ts'];
+
+            if (iconType === 'folder') {
                 AppRegistry.launchApp('fileExplorer', { initialPath: filePath });
-            } else {
-                // Generic open for other file types (e.g., image viewer for images)
-                const ext = getIconForFileType(filePath); // Re-check based on actual extension for safety
-                if (['🖼️'].includes(ext)) { // Check against image icon
-                    AppRegistry.launchApp('imageViewer', { initialUrl: `file://${filePath}` });
-                } else {
-                    alert(`Opening ${iconType}: ${filePath} (Handler not fully implemented for this file type)`);
-                }
+            } else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileExtension)) {
+                AppRegistry.launchApp('imageViewer', { initialUrl: `file://${filePath}` });
+            } else if (textFileExtensions.includes(fileExtension)) {
+                AppRegistry.launchApp('notepad', { filePath: filePath });
+            }
+            else {
+                await showInAppAlert(`Opening file: "${filePath}" (Generic file open for this type is not fully implemented yet)`);
             }
         }
     },
@@ -201,6 +249,84 @@ export const DesktopManager = {
             x: Math.max(padding, snappedX), // Ensure it doesn't go outside padding
             y: Math.max(padding, snappedY)
         };
+    },
+
+    /**
+     * Finds the next available grid position for an icon, avoiding overlaps.
+     * @param {number} targetX - The desired X coordinate (snapped to grid).
+     * @param {number} targetY - The desired Y coordinate (snapped to grid).
+     * @param {string} iconIdToMove - The ID of the icon being moved, to exclude it from collision checks.
+     * @param {object} currentRenderOccupiedPositions - Positions occupied during the current render cycle.
+     * @returns {{x: number, y: number}} The final collision-free coordinates.
+     */
+    _findNextAvailableGridPosition: (targetX, targetY, iconIdToMove, currentRenderOccupiedPositions = {}) => {
+        const iconCellWidth = state.iconGridCellSize.width;
+        const iconCellHeight = state.iconGridCellSize.height;
+        const padding = CONSTANTS.DESKTOP_PADDING;
+        const desktopWidth = domElements.desktopElement.clientWidth;
+        const desktopHeight = domElements.desktopElement.clientHeight;
+
+        // Convert pixel coordinates to grid indices
+        let startCol = Math.round((targetX - padding) / iconCellWidth);
+        let startRow = Math.round((targetY - padding) / iconCellHeight);
+
+        // Define search boundaries (e.g., search within a reasonable area)
+        const maxCols = Math.floor((desktopWidth - padding * 2) / iconCellWidth);
+        const maxRows = Math.floor((desktopHeight - padding * 2) / iconCellHeight);
+
+        // Keep track of visited positions to avoid infinite loops
+        const visited = new Set();
+
+        // Search outwards from the target position
+        for (let spiralSize = 0; ; spiralSize++) {
+            for (let i = -spiralSize; i <= spiralSize; i++) {
+                for (let j = -spiralSize; j <= spiralSize; j++) {
+                    const col = startCol + i;
+                    const row = startRow + j;
+
+                    // Calculate pixel coordinates for the current grid cell
+                    const currentX = col * iconCellWidth + padding;
+                    const currentY = row * iconCellHeight + padding;
+
+                    // Check if within desktop bounds
+                    if (currentX >= padding && currentY >= padding &&
+                        currentX + iconCellWidth <= desktopWidth - padding &&
+                        currentY + iconCellHeight <= desktopHeight - padding) {
+
+                        const posKey = `${currentX},${currentY}`;
+                        if (visited.has(posKey)) continue;
+                        visited.add(posKey);
+
+                        let isOccupied = false;
+                        // Check against globally stored positions (excluding the icon being moved)
+                        for (const id in state.iconPositions) {
+                            if (id === iconIdToMove) continue;
+                            const existingPos = state.iconPositions[id];
+                            if (existingPos.x === currentX && existingPos.y === currentY) {
+                                isOccupied = true;
+                                break;
+                            }
+                        }
+                        // Additionally check against positions already assigned in the current render cycle
+                        if (!isOccupied && currentRenderOccupiedPositions[posKey]) {
+                            isOccupied = true;
+                        }
+
+                        if (!isOccupied) {
+                            return { x: currentX, y: currentY };
+                        }
+                    }
+                }
+            }
+            // If no position found in this spiral layer, and we've searched a large area,
+            // it's possible the desktop is full or there's an issue.
+            // For now, we'll just keep expanding the search.
+            // A more robust solution might involve resizing the desktop or alerting the user.
+            if (spiralSize > Math.max(maxCols, maxRows) * 2) { // Prevent infinite search on full desktop
+                console.warn("DM: Could not find an available grid position for icon. Returning original snapped position.");
+                return { x: targetX, y: targetY }; // Fallback
+            }
+        }
     },
 
     /** Handles pointer down on a desktop icon (for click, double-click, drag). */
@@ -241,8 +367,12 @@ export const DesktopManager = {
                 pointerId: event.pointerId,
                 initialPointerX: coords.x, // Added for drag threshold
                 initialPointerY: coords.y, // Added for drag threshold
-                isActive: false // Drag is PENDING, not active yet
+                isActive: false, // Drag is PENDING, not active yet
+                // Store file system info for drag & drop
+                filePath: iconElement.dataset.filePath,
+                itemType: iconElement.dataset.iconType
             };
+            iconElement.setAttribute('draggable', 'true'); // Make draggable when a potential drag starts
             // DO NOT add 'dragging' class here
             // DO NOT setPointerCapture here
             // DO NOT change z-index here yet
@@ -327,6 +457,27 @@ export const DesktopManager = {
         }
     },
 
+    /** Loads icon positions from localStorage. */
+    _loadIconPositions: () => {
+        try {
+            const storedData = localStorage.getItem('desktop-icon-positions-v2');
+            if (storedData) {
+                const parsedData = JSON.parse(storedData);
+                state.iconPositions = parsedData.positions || {};
+                state.lastStoredDesktopWidth = parsedData.desktopWidth || 0;
+                // console.log("DM: Loaded icon positions from localStorage:", state.iconPositions); // Dev log
+            } else {
+                state.iconPositions = {};
+                state.lastStoredDesktopWidth = 0;
+                // console.log("DM: No icon positions found in localStorage. Starting fresh."); // Dev log
+            }
+        } catch (e) {
+            console.warn("DM: Error loading icon positions from localStorage:", e);
+            state.iconPositions = {}; // Reset on error to prevent corrupted state
+            state.lastStoredDesktopWidth = 0;
+        }
+    },
+
     /** Saves current icon positions to localStorage. */
     saveIconPositions: () => {
         try {
@@ -376,5 +527,219 @@ export const DesktopManager = {
             ContextMenu.showForDesktop(event);
         }
         if (StartMenu && StartMenu.isVisible()) StartMenu.hide(); // Hide start menu if open
+    },
+
+    /** Handles the dragstart event for desktop icons. */
+    handleDragStart: (event) => {
+        const iconElement = event.target.closest('.desktop-icon');
+        if (!iconElement) return;
+
+        const filePath = iconElement.dataset.filePath;
+        const itemType = iconElement.dataset.iconType;
+
+        if (filePath && itemType) {
+            event.dataTransfer.setData('text/plain', JSON.stringify({ filePath, itemType, source: 'desktop' }));
+            event.dataTransfer.effectAllowed = 'move';
+            iconElement.classList.add('dragging'); // Add visual feedback
+            state.dragInfo.isActive = true; // Confirm drag is active
+            SoundPlayer.playSound('drag');
+        } else {
+            event.preventDefault(); // Prevent drag if no file path
+        }
+    },
+
+    /** Handles the dragover event for desktop and folder icons. */
+    handleDragOver: (event) => {
+        event.preventDefault(); // Necessary to allow dropping
+        const targetElement = event.target.closest('.desktop-icon');
+        const isFolder = targetElement && targetElement.dataset.iconType === 'folder';
+        const isDesktop = event.target === domElements.desktopElement;
+
+        if (isFolder || isDesktop) {
+            event.dataTransfer.dropEffect = 'move'; // Indicate a move operation
+            if (isFolder) {
+                targetElement.classList.add('drag-over'); // Visual feedback for folder
+            }
+        } else {
+            event.dataTransfer.dropEffect = 'none';
+        }
+    },
+
+    /** Handles the dragleave event for desktop and folder icons. */
+    handleDragLeave: (event) => {
+        const targetElement = event.target.closest('.desktop-icon');
+        if (targetElement && targetElement.dataset.iconType === 'folder') {
+            targetElement.classList.remove('drag-over');
+        }
+    },
+
+    /** Handles the drop event for desktop and folder icons. */
+    handleDrop: async (event) => {
+        event.preventDefault();
+        const targetElement = event.target.closest('.desktop-icon');
+        const isFolder = targetElement && targetElement.dataset.iconType === 'folder';
+        const isDesktop = event.target === domElements.desktopElement;
+
+        if (targetElement && isFolder) {
+            targetElement.classList.remove('drag-over');
+        }
+
+        if (!isFolder && !isDesktop) {
+            return; // Not a valid drop target
+        }
+
+        try {
+            const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+            const { filePath: sourcePath, itemType, source } = data;
+
+            if (!sourcePath || !itemType) {
+                console.warn("DM: Drop event missing filePath or itemType.", data);
+                return;
+            }
+
+            let destinationPath;
+            if (isFolder) {
+                destinationPath = targetElement.dataset.filePath;
+                if (!destinationPath.endsWith('/')) destinationPath += '/';
+            } else { // Dropped on desktop background
+                destinationPath = '/Desktop/';
+            }
+
+            const { name: itemName } = FileSystemManager._getPathInfo(sourcePath);
+            let newPath = `${destinationPath}${itemName}`;
+            if (itemType === 'folder' && !newPath.endsWith('/')) {
+                newPath += '/';
+            }
+
+            if (sourcePath === newPath) {
+                console.log("DM: Item dropped in same location, no move needed.");
+                return;
+            }
+
+            const existing = await FileSystemManager.getItem(newPath);
+            if (existing) {
+                if (!(await showInAppConfirm(`An item named "${itemName}" already exists in this location. Overwrite?`))) {
+                    console.log(`Move cancelled for ${itemName} due to overwrite.`);
+                    return;
+                }
+                await FileSystemManager.deleteItem(newPath); // Delete existing before overwriting
+            }
+
+            await FileSystemManager.renameItem(sourcePath, newPath); // Use renameItem for move
+            SoundPlayer.playSound('drop');
+
+            // Refresh UI
+            await DesktopManager.renderIcons();
+            // Also refresh any open File Explorer windows that might be affected
+            Object.values(state.openWindows).forEach(win => {
+                if (win.appId === 'fileExplorer' && win.appInstance && typeof win.appInstance.refresh === 'function') {
+                    win.appInstance.refresh();
+                }
+            });
+
+        } catch (error) {
+            console.error("DM: Error handling drop:", error);
+            await showInAppAlert("Failed to move item.");
+        } finally {
+            // Clean up drag state
+            if (state.dragInfo.element) {
+                state.dragInfo.element.classList.remove('dragging');
+                state.dragInfo.element.removeAttribute('draggable');
+            }
+            state.dragInfo = { isActive: false };
+        }
+    },
+
+    /** Initiates inline renaming for a desktop icon. */
+    startRenameInline: (iconId, currentName, filePath) => {
+        const iconElement = document.getElementById(iconId);
+        if (!iconElement) return;
+
+        const labelSpan = iconElement.querySelector('.icon-label');
+        if (!labelSpan) return;
+
+        // Store original name and path for revert/save
+        labelSpan.dataset.originalName = currentName;
+        labelSpan.dataset.filePath = filePath;
+
+        labelSpan.contentEditable = 'true';
+        labelSpan.focus();
+        document.execCommand('selectAll', false, null); // Select all text
+
+        const handleBlur = async () => {
+            labelSpan.contentEditable = 'false';
+            labelSpan.removeEventListener('blur', handleBlur);
+            labelSpan.removeEventListener('keydown', handleKeyDown);
+            await DesktopManager._saveRename(labelSpan, filePath);
+        };
+
+        const handleKeyDown = async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                labelSpan.contentEditable = 'false';
+                labelSpan.removeEventListener('blur', handleBlur);
+                labelSpan.removeEventListener('keydown', handleKeyDown);
+                await DesktopManager._saveRename(labelSpan, filePath);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                labelSpan.textContent = labelSpan.dataset.originalName; // Revert
+                labelSpan.contentEditable = 'false';
+                labelSpan.removeEventListener('blur', handleBlur);
+                labelSpan.removeEventListener('keydown', handleKeyDown);
+                iconElement.focus(); // Return focus to the icon
+            }
+        };
+
+        labelSpan.addEventListener('blur', handleBlur);
+        labelSpan.addEventListener('keydown', handleKeyDown);
+    },
+
+    /** Saves the renamed item. */
+    _saveRename: async (labelSpan, originalFilePath) => {
+        const newName = labelSpan.textContent.trim();
+        const originalName = labelSpan.dataset.originalName;
+        const itemType = labelSpan.closest('.desktop-icon').dataset.iconType;
+
+        if (newName === '' || newName === originalName) {
+            labelSpan.textContent = originalName; // Revert if empty or same
+            return;
+        }
+
+        const sanitizedNewName = sanitizeFilename(newName);
+        if (sanitizedNewName !== newName) {
+            await showInAppAlert(`Invalid characters in name. Renamed to: "${sanitizedNewName}"`);
+            labelSpan.textContent = sanitizedNewName; // Update UI with sanitized name
+        }
+
+        try {
+            const { parentPath } = FileSystemManager._getPathInfo(originalFilePath);
+            let newPath = `${parentPath}${sanitizedNewName}`;
+            if (itemType === 'folder' && !newPath.endsWith('/')) {
+                newPath += '/';
+            }
+
+            const existing = await FileSystemManager.getItem(newPath);
+            if (existing && existing.path !== originalFilePath) { // Check if existing is not the item itself
+                await showInAppAlert(`An item named "${sanitizedNewName}" already exists in this location.`);
+                labelSpan.textContent = originalName; // Revert UI
+                return;
+            }
+
+            await FileSystemManager.renameItem(originalFilePath, newPath);
+            SoundPlayer.playSound('rename');
+            await DesktopManager.renderIcons(); // Re-render to update icon data and positions
+
+            // Refresh any open File Explorer windows that might be affected
+            Object.values(state.openWindows).forEach(win => {
+                if (win.appId === 'fileExplorer' && win.appInstance && typeof w.appInstance.refresh === 'function') {
+                    w.appInstance.refresh();
+                }
+            });
+
+        } catch (err) {
+            console.error("DM: Error saving inline rename:", err);
+            await showInAppAlert("Failed to rename item.");
+            labelSpan.textContent = originalName; // Revert UI on error
+        }
     },
 };

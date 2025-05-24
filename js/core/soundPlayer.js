@@ -1,23 +1,30 @@
 import { state } from './state.js';
 
 export const SoundPlayer = {
-    /** Initializes the AudioContext. */
+    masterGainNode: null, // Central gain node for master volume control
+
+    /** Initializes the AudioContext and master gain node. */
     init: () => {
         try {
             state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            SoundPlayer.masterGainNode = state.audioContext.createGain();
+            SoundPlayer.masterGainNode.connect(state.audioContext.destination);
+            // Set initial volume from state, converting 0-100 to 0.0-1.0
+            SoundPlayer.masterGainNode.gain.setValueAtTime(state.masterVolume / 100, state.audioContext.currentTime);
         } catch (e) {
             console.warn("Web Audio API not supported.");
         }
     },
+
     /** Plays a predefined sound effect. */
     playSound: (type) => {
-        if (!state.audioContext) return;
+        if (!state.audioContext || !SoundPlayer.masterGainNode) return;
         try {
             const oscillator = state.audioContext.createOscillator();
             const gainNode = state.audioContext.createGain();
 
             oscillator.connect(gainNode);
-            gainNode.connect(state.audioContext.destination);
+            gainNode.connect(SoundPlayer.masterGainNode); // Connect to master gain node
 
             gainNode.gain.setValueAtTime(0.05, state.audioContext.currentTime); // Start with low volume
 
@@ -42,5 +49,15 @@ export const SoundPlayer = {
         } catch (e) {
             console.warn("SoundPlayer error:", e);
         }
+    },
+
+    /** Sets the master volume for all sounds. */
+    setMasterVolume: (volume) => {
+        if (!state.audioContext || !SoundPlayer.masterGainNode) return;
+        // Ensure volume is within 0-100 range
+        const clampedVolume = Math.max(0, Math.min(100, volume));
+        state.masterVolume = clampedVolume; // Update state
+        SoundPlayer.masterGainNode.gain.setValueAtTime(clampedVolume / 100, state.audioContext.currentTime);
+        localStorage.setItem('master-volume', clampedVolume.toString()); // Persist volume
     }
 };

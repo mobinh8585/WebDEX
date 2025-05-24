@@ -53,3 +53,5 @@ build/
 .vscode/
 *.swp
 *.swo
+
+.clinerules/

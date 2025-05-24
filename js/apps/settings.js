@@ -1,14 +1,13 @@
 import { state } from '../core/state.js';
 import { SoundPlayer } from '../core/soundPlayer.js';
 import { ThemeManager } from '../core/themeManager.js';
-import { DesktopManager } from '../managers/desktopManager.js'; // For setBackground
+import { DesktopManager } from '../managers/desktopManager.js'; 
 
 export const settingsAppConfig = {
     name:'Settings', icon:'⚙️', width:500, height:420, allowMultiple:false,
     launch: (windowId, contentArea) => {
-        if(!contentArea) return;
+        if(!contentArea) return null;
         contentArea.classList.add('settings-app-content');
-        // contentArea.id = `settings-content-${windowId}`; // For specific styling
 
         const currentWallpaperLight = localStorage.getItem('desktop-wallpaper-light') || '';
         const currentWallpaperDark = localStorage.getItem('desktop-wallpaper-dark') || '';
@@ -44,7 +43,7 @@ export const settingsAppConfig = {
                     getComputedStyle(document.documentElement).getPropertyValue('--window-bg-dark');
             }
         };
-        updateThemeDisplay(); // Initial display
+        updateThemeDisplay();
 
         const setupWallpaperControls = (themeType) => {
             const urlInput = contentArea.querySelector(`#wallpaper-url-${themeType}-${windowId}`);
@@ -55,18 +54,17 @@ export const settingsAppConfig = {
 
             applyButton.onclick = () => {
                 const url = urlInput.value.trim();
-                // Saving directly to localStorage here is fine as DesktopManager.setBackground also does this
                 localStorage.setItem(`desktop-wallpaper-${themeType}`, url);
-                if (state.currentTheme === themeType && DesktopManager) { // Apply if current theme matches
+                if (state.currentTheme === themeType && DesktopManager) { 
                     DesktopManager.setBackground(url);
                 }
                 SoundPlayer.playSound('click');
             };
             resetButton.onclick = () => {
-                localStorage.setItem(`desktop-wallpaper-${themeType}`, ''); // Empty string for default
+                localStorage.setItem(`desktop-wallpaper-${themeType}`, ''); 
                 urlInput.value = '';
                 if (state.currentTheme === themeType && DesktopManager) {
-                    DesktopManager.setBackground(''); // Triggers default
+                    DesktopManager.setBackground(''); 
                 }
                 SoundPlayer.playSound('click');
             };
@@ -78,9 +76,10 @@ export const settingsAppConfig = {
         if (toggleThemeButton) {
             toggleThemeButton.onclick = () => {
                 ThemeManager.toggleTheme();
-                updateThemeDisplay(); // Update labels/preview after toggle
+                updateThemeDisplay(); 
                 SoundPlayer.playSound('click');
             };
         }
+        return {}; // Return a dummy appInstance
     }
 };

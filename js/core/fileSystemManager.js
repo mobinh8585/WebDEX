@@ -3,39 +3,32 @@ import { getFileExtension } from './utils.js'; // For mimeType in createFile
 
 export const FileSystemManager = {
     _db: null,
-    DB_NAME: 'WebDesktopDB_V5', // Keep version if schema is same, or increment if changed
+    DB_NAME: 'WebDesktopDB_V5',
     STORE_NAME: 'files',
-    DB_VERSION: 1, // Increment if onupgradeneeded changes object stores/indices
+    DB_VERSION: 2,
 
-    /** Initializes the IndexedDB database. */
     init: async () => {
         return new Promise((resolve, reject) => {
             if (FileSystemManager._db && state.fileSystemReady) {
-                // console.log("FSM: Already initialized."); // Dev log
                 resolve(FileSystemManager._db);
                 return;
             }
-            // console.log("FSM: Initializing IndexedDB..."); // Dev log
             const request = indexedDB.open(FileSystemManager.DB_NAME, FileSystemManager.DB_VERSION);
 
             request.onupgradeneeded = (event) => {
-                // console.log("FSM: onupgradeneeded triggered."); // Dev log
                 const db = event.target.result;
                 if (!db.objectStoreNames.contains(FileSystemManager.STORE_NAME)) {
                     const store = db.createObjectStore(FileSystemManager.STORE_NAME, { keyPath: 'path' });
                     store.createIndex('parentPath', 'parentPath', { unique: false });
                     store.createIndex('type', 'type', { unique: false });
-                    // console.log("FSM: Object store created."); // Dev log
                 }
             };
 
             request.onsuccess = async (event) => {
                 FileSystemManager._db = event.target.result;
-                // console.log("FSM: IndexedDB connection successful."); // Dev log
                 try {
                     await FileSystemManager._ensureBaseStructure();
                     state.fileSystemReady = true;
-                    // console.log("FSM: Base structure ensured. File system ready."); // Dev log
                     resolve(FileSystemManager._db);
                 } catch (err) {
                     console.error("FSM: Error ensuring base structure:", err);
@@ -52,23 +45,17 @@ export const FileSystemManager = {
         });
     },
 
-    /** Ensures base directories like '/', '/Desktop' exist. */
     _ensureBaseStructure: async () => {
-        // console.log("FSM: Ensuring base structure..."); // Dev log
-        const baseDirs = ['/', '/Desktop/', '/Documents/', '/Pictures/', '/Downloads/'];
+        const baseDirs = ['/', '/Desktop/', '/Documents/', '/Pictures/', '/Downloads/', '/Recycle Bin/', '/user_apps/'];
         for (const dirPath of baseDirs) {
-            // Normalize path to always end with '/' for folders, except root itself which is just '/'
             const normalizedPath = dirPath === '/' ? '/' : (dirPath.endsWith('/') ? dirPath : dirPath + '/');
             const item = await FileSystemManager.getItem(normalizedPath).catch(() => null);
             if (!item) {
-                // console.log(`FSM: Creating base directory: ${normalizedPath}`); // Dev log
                 await FileSystemManager.createFolder(normalizedPath);
             }
         }
-        // console.log("FSM: Base structure check complete."); // Dev log
     },
 
-    /** Gets an object store with the specified mode. */
     _getObjectStore: (mode = 'readonly') => {
         if (!FileSystemManager._db) {
             throw new Error("FSM: Database not initialized or connection lost.");
@@ -77,20 +64,18 @@ export const FileSystemManager = {
         return transaction.objectStore(FileSystemManager.STORE_NAME);
     },
 
-    /** Retrieves an item by its path. */
     getItem: async (path) => {
         return new Promise((resolve, reject) => {
             if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for getItem.")); return; }
             try {
                 const store = FileSystemManager._getObjectStore();
                 const request = store.get(path);
-                request.onsuccess = () => resolve(request.result);
+                request.onsuccess = () => resolve(request.result); // Result can be undefined if not found
                 request.onerror = (e) => { console.error(`FSM: Error getItem '${path}':`, e.target.error); reject(e.target.error); };
             } catch (err) { reject(err); }
         });
     },
 
-    /** Adds or updates an item in the store. */
     putItem: async (itemData) => {
         return new Promise((resolve, reject) => {
             if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for putItem.")); return; }
@@ -103,39 +88,190 @@ export const FileSystemManager = {
         });
     },
 
-    /** Deletes an item (and its children if it's a folder). */
+    _permanentDeleteItem: async (path) => {
+        return new Promise(async (resolve, reject) => {
+            if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for _permanentDeleteItem.")); return; }
+            try {
+                const item = await FileSystemManager.getItem(path).catch(() => null);
+                if (!item) {
+                    console.warn(`FSM: Attempted to permanently delete non-existent item: ${path}`);
+                    resolve(true);
+                    return;
+                }
+
+                const store = FileSystemManager._getObjectStore('readwrite');
+                if (item.type === 'folder') {
+                    const itemsInFolder = await FileSystemManager.listDirectory(path);
+                    for (const subItem of itemsInFolder) {
+                        await FileSystemManager._permanentDeleteItem(subItem.path);
+                    }
+                }
+                const request = store.delete(path);
+                request.onsuccess = () => resolve(true);
+                request.onerror = (e) => { console.error(`FSM: Error _permanentDeleteItem '${path}':`, e.target.error); reject(e.target.error); };
+            } catch (err) { reject(err); }
+        });
+    },
+
     deleteItem: async (path) => {
         return new Promise(async (resolve, reject) => {
             if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for deleteItem.")); return; }
             try {
                 const item = await FileSystemManager.getItem(path).catch(() => null);
-                const store = FileSystemManager._getObjectStore('readwrite');
-                if (item && item.type === 'folder') {
-                    const itemsInFolder = await FileSystemManager.listDirectory(path);
-                    for (const subItem of itemsInFolder) {
-                        await FileSystemManager.deleteItem(subItem.path); // Recursive delete
-                    }
+                if (!item) {
+                    console.warn(`FSM: Attempted to delete non-existent item: ${path}`);
+                    resolve(true);
+                    return;
                 }
-                const request = store.delete(path);
-                request.onsuccess = () => resolve(true);
-                request.onerror = (e) => { console.error(`FSM: Error deleteItem '${path}':`, e.target.error); reject(e.target.error); };
+
+                // If the item is already in the Recycle Bin, permanently delete it
+                if (path.startsWith('/Recycle Bin/')) {
+                    await FileSystemManager._permanentDeleteItem(path);
+                    resolve(true);
+                    return;
+                }
+
+                // Move item to Recycle Bin
+                const recycleBinPath = '/Recycle Bin/';
+                const { name } = FileSystemManager._getPathInfo(path);
+                const newPathInRecycleBin = `${recycleBinPath}${name}_${Date.now()}${item.type === 'folder' ? '/' : ''}`;
+
+                const newItem = {
+                    ...item,
+                    path: newPathInRecycleBin,
+                    parentPath: recycleBinPath,
+                    originalPath: path, // Store original path for restoration
+                    isRecycled: true,
+                    modified: Date.now()
+                };
+
+                const transaction = FileSystemManager._db.transaction(FileSystemManager.STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(FileSystemManager.STORE_NAME);
+
+                // Delete old item
+                const deleteRequest = store.delete(path);
+                deleteRequest.onerror = (e) => { console.error(`FSM: Error deleting original item '${path}' for recycle:`, e.target.error); reject(e.target.error); };
+                
+                deleteRequest.onsuccess = () => {
+                    // Add new item to recycle bin
+                    const putRequest = store.put(newItem);
+                    putRequest.onsuccess = () => resolve(newItem);
+                    putRequest.onerror = (e) => { console.error(`FSM: Error putting item to recycle bin '${newItem.path}':`, e.target.error); reject(e.target.error);};
+                };
+
             } catch (err) { reject(err); }
         });
     },
 
-    /** Lists all items directly under a given directory path. */
+    renameItem: async (oldPath, newPath) => { // Used for both rename and move
+        return new Promise(async (resolve, reject) => {
+            if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for renameItem.")); return; }
+            try {
+                const item = await FileSystemManager.getItem(oldPath);
+                if (!item) { reject(new Error(`FSM: Item not found at '${oldPath}'`)); return; }
+
+                const normalizedNewPath = item.type === 'folder' && !newPath.endsWith('/') ? newPath + '/' : newPath;
+                const { name: newName, parentPath: newParentPath } = FileSystemManager._getPathInfo(normalizedNewPath);
+
+                // Check if destination already exists and is not the source item itself (important for case-only renames)
+                const existingAtNewPath = await FileSystemManager.getItem(normalizedNewPath);
+                if (existingAtNewPath && existingAtNewPath.path !== oldPath) {
+                    reject(new Error(`FSM: An item already exists at the destination path '${normalizedNewPath}'`));
+                    return;
+                }
+
+
+                const transaction = FileSystemManager._db.transaction(FileSystemManager.STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(FileSystemManager.STORE_NAME);
+
+                // Create the new item structure
+                const newItem = { ...item,
+                    path: normalizedNewPath,
+                    name: newName,
+                    parentPath: newParentPath,
+                    modified: Date.now()
+                };
+
+                // If it's a folder, recursively update paths of all children
+                if (item.type === 'folder') {
+                    const children = await FileSystemManager.listDirectory(oldPath); // This uses a separate transaction
+                    for (const child of children) {
+                        const relativePath = child.path.substring(oldPath.length);
+                        // Recursively call renameItem for children. This will create new transactions.
+                        // For complex folder moves, this could be optimized by doing it within the same transaction if possible.
+                        await FileSystemManager.renameItem(child.path, normalizedNewPath + relativePath);
+                    }
+                }
+
+                // Delete old item and add new item within the same transaction (if not a folder with children handled above)
+                const deleteRequest = store.delete(oldPath);
+                deleteRequest.onerror = (e) => { console.error(`FSM: Error deleting old item '${oldPath}' in rename:`, e.target.error); reject(e.target.error); };
+                
+                deleteRequest.onsuccess = () => {
+                    const putRequest = store.put(newItem);
+                    putRequest.onsuccess = () => resolve(newItem);
+                    putRequest.onerror = (e) => { console.error(`FSM: Error putting new item '${newItem.path}' in rename:`, e.target.error); reject(e.target.error);};
+                };
+                
+                // For folder moves without children (or if children handled by recursive calls), this direct put after delete is fine.
+                // However, if children were handled by separate transactions, ensure transaction commits properly.
+
+            } catch (err) { reject(err); }
+        });
+    },
+
+    copyItem: async (sourcePath, destinationPath) => {
+        return new Promise(async (resolve, reject) => {
+            if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for copyItem.")); return; }
+            try {
+                const item = await FileSystemManager.getItem(sourcePath);
+                if (!item) { reject(new Error(`FSM: Item not found at '${sourcePath}'`)); return; }
+
+                const normalizedDestinationPath = item.type === 'folder' && !destinationPath.endsWith('/') ? destinationPath + '/' : destinationPath;
+                const { name: destName, parentPath: destParentPath } = FileSystemManager._getPathInfo(normalizedDestinationPath);
+                
+                // Check if destination already exists
+                const existingAtDest = await FileSystemManager.getItem(normalizedDestinationPath);
+                if (existingAtDest) {
+                    reject(new Error(`FSM: An item already exists at the destination path '${normalizedDestinationPath}' for copy.`));
+                    return;
+                }
+
+
+                const newItemData = { ...item,
+                    path: normalizedDestinationPath,
+                    name: destName,
+                    parentPath: destParentPath,
+                    created: Date.now(),
+                    modified: Date.now()
+                };
+                // If 'id' or other unique store-generated keys were part of item, they should be removed for a true copy.
+                // delete newItemData.id; (if applicable)
+
+                await FileSystemManager.putItem(newItemData); // Puts the new item
+
+                if (item.type === 'folder') {
+                    const children = await FileSystemManager.listDirectory(sourcePath);
+                    for (const child of children) {
+                        const relativePath = child.path.substring(sourcePath.length);
+                        await FileSystemManager.copyItem(child.path, normalizedDestinationPath + relativePath);
+                    }
+                }
+                resolve(newItemData);
+            } catch (err) { reject(err); }
+        });
+    },
+
     listDirectory: async (dirPath) => {
         return new Promise((resolve, reject) => {
             if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for listDirectory.")); return; }
             try {
-                // Ensure parent path for querying ends with a slash, or is just "/" for root's children
                 const queryParentPath = dirPath === '/' ? '/' : (dirPath.endsWith('/') ? dirPath : dirPath + '/');
                 const store = FileSystemManager._getObjectStore();
                 const index = store.index('parentPath');
                 const request = index.getAll(queryParentPath);
 
                 request.onsuccess = () => {
-                    // console.log(`FSM: listDirectory('${queryParentPath}') found:`, request.result); // Dev Log
                     resolve(request.result || []);
                 }
                 request.onerror = (e) => {
@@ -146,7 +282,6 @@ export const FileSystemManager = {
         });
     },
 
-    /** Parses a full path into its name, parent path, and full path. */
     _getPathInfo: (fullPath) => {
         if (fullPath === '/') return { name: '/', parentPath: null, fullPath: '/' };
 
@@ -155,49 +290,136 @@ export const FileSystemManager = {
         const name = parts.pop() || '';
 
         let parentPath;
-        if (parts.length === 0 || (parts.length === 1 && parts[0] === '')) { // e.g. "/file.txt" or "/folder"
+        if (parts.length === 0 || (parts.length === 1 && parts[0] === '')) {
             parentPath = '/';
         } else {
-            parentPath = parts.join('/') + '/'; // e.g. "/Documents/"
+            parentPath = parts.join('/') + '/';
         }
-        return { name, parentPath, fullPath: fullPath }; // Return original fullPath for consistency
+        return { name, parentPath, fullPath: fullPath };
     },
 
-    /** Creates a new file. */
-    createFile: async (fullPath, content = "") => {
+    createFile: async (fullPath, content = "", overwrite = false) => {
         if (!FileSystemManager._db) throw new Error("FSM: DB not available for createFile.");
         const { name, parentPath } = FileSystemManager._getPathInfo(fullPath);
         if (!name) throw new Error("File name cannot be empty.");
 
         const now = Date.now();
+        let createdTime = now;
+
+        const existingItem = await FileSystemManager.getItem(fullPath).catch(() => null);
+
+        if (existingItem) {
+            if (overwrite) {
+                createdTime = existingItem.created || now; // Preserve original creation time
+            } else {
+                // If not overwriting and file exists, throw error or handle as per app logic.
+                throw new Error(`File ${fullPath} already exists. Use overwrite option to replace it.`);
+            }
+        }
+        
         const fileData = {
-            path: fullPath, // Store with original fullPath
+            path: fullPath,
             name: name,
             type: 'file',
             content: content,
-            mimeType: getFileExtension(name) === 'txt' ? 'text/plain' : 'application/octet-stream',
+            mimeType: getFileExtension(name) === 'txt' ? 'text/plain' : (['js', 'json', 'css', 'html', 'md', 'xml', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb', 'sh', 'sql', 'yaml', 'yml', 'ts'].includes(getFileExtension(name)) ? `text/${getFileExtension(name)}` : 'application/octet-stream'),
             size: new TextEncoder().encode(content).length,
-            created: now,
+            created: createdTime,
             modified: now,
             parentPath: parentPath
         };
         await FileSystemManager.putItem(fileData);
-        // console.log("FSM: Created file:", fileData); // Dev log
         return fileData;
     },
 
-    /** Creates a new folder. */
+    restoreItem: async (itemPathInRecycleBin) => {
+        return new Promise(async (resolve, reject) => {
+            if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for restoreItem.")); return; }
+            try {
+                const item = await FileSystemManager.getItem(itemPathInRecycleBin);
+                if (!item || !item.isRecycled || !item.originalPath) {
+                    reject(new Error(`FSM: Item '${itemPathInRecycleBin}' is not a valid recycled item.`));
+                    return;
+                }
+
+                let targetPath = item.originalPath;
+                let { name, parentPath } = FileSystemManager._getPathInfo(targetPath);
+
+                // Check if original path is available
+                const existingAtOriginalPath = await FileSystemManager.getItem(targetPath).catch(() => null);
+                if (existingAtOriginalPath) {
+                    // If original path is occupied, try to restore to Desktop
+                    targetPath = `/Desktop/${name}`;
+                    parentPath = '/Desktop/';
+                    const existingAtDesktop = await FileSystemManager.getItem(targetPath).catch(() => null);
+                    if (existingAtDesktop) {
+                        // If Desktop path is also occupied, append a timestamp
+                        targetPath = `/Desktop/${name}_${Date.now()}`;
+                    }
+                    console.warn(`FSM: Original path '${item.originalPath}' occupied. Restoring to '${targetPath}'.`);
+                }
+
+                const newItem = {
+                    ...item,
+                    path: targetPath,
+                    name: name,
+                    parentPath: parentPath,
+                    isRecycled: false,
+                    originalPath: undefined, // Clear originalPath
+                    modified: Date.now()
+                };
+
+                const transaction = FileSystemManager._db.transaction(FileSystemManager.STORE_NAME, 'readwrite');
+                const store = transaction.objectStore(FileSystemManager.STORE_NAME);
+
+                // Delete item from recycle bin
+                const deleteRequest = store.delete(itemPathInRecycleBin);
+                deleteRequest.onerror = (e) => { console.error(`FSM: Error deleting item from recycle bin '${itemPathInRecycleBin}' for restore:`, e.target.error); reject(e.target.error); };
+                
+                deleteRequest.onsuccess = () => {
+                    // Add item back to its original (or new) location
+                    const putRequest = store.put(newItem);
+                    putRequest.onsuccess = () => resolve(newItem);
+                    putRequest.onerror = (e) => { console.error(`FSM: Error putting item back '${newItem.path}' during restore:`, e.target.error); reject(e.target.error);};
+                };
+
+            } catch (err) { reject(err); }
+        });
+    },
+
+    emptyRecycleBin: async () => {
+        return new Promise(async (resolve, reject) => {
+            if (!FileSystemManager._db) { reject(new Error("FSM: DB not available for emptyRecycleBin.")); return; }
+            try {
+                const recycleBinContents = await FileSystemManager.listDirectory('/Recycle Bin/');
+                for (const item of recycleBinContents) {
+                    await FileSystemManager._permanentDeleteItem(item.path);
+                }
+                resolve(true);
+            } catch (err) {
+                console.error("FSM: Error emptying recycle bin:", err);
+                reject(err);
+            }
+        });
+    },
+
     createFolder: async (fullPath) => {
         if (!FileSystemManager._db) throw new Error("FSM: DB not available for createFolder.");
         const { name, parentPath } = FileSystemManager._getPathInfo(fullPath);
 
-        // For root folder "/", name is "/", parentPath is null.
-        // For other folders, name should not be empty.
         if (!name && fullPath !== '/') throw new Error("Folder name cannot be empty.");
 
         const now = Date.now();
-        // Folders (except root) should have paths ending with "/"
         const folderPathNormalized = fullPath === '/' ? '/' : (fullPath.endsWith('/') ? fullPath : fullPath + '/');
+
+        const existing = await FileSystemManager.getItem(folderPathNormalized).catch(() => null);
+        if (existing) {
+            if (existing.type === 'folder') {
+                return existing; // Folder already exists, do nothing and resolve
+            } else {
+                throw new Error(`A file with the name ${folderPathNormalized} already exists.`);
+            }
+        }
 
         const folderData = {
             path: folderPathNormalized,
@@ -208,7 +430,6 @@ export const FileSystemManager = {
             parentPath: parentPath
         };
         await FileSystemManager.putItem(folderData);
-        // console.log("FSM: Created folder:", folderData); // Dev log
         return folderData;
     },
 };
