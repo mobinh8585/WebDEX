@@ -222,11 +222,8 @@ export const myCoolAppConfig = {
         return true; // Allow close
     }
 };
-IGNORE_WHEN_COPYING_START
-content_copy
-download
-Use code with caution.
-IGNORE_WHEN_COPYING_END
+```
+
 Debugging 🐞
 
 Use your browser's standard Developer Tools (Console, Inspector, Sources, Application tab for storage).
